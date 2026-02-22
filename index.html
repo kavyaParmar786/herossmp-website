@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HeroSMP</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+<!-- Hero Section -->
+<section class="h-screen flex flex-col justify-center items-center bg-cover bg-center" style="background-image:url('images/hero-bg.jpg')">
+  <h1 class="text-5xl font-bold mb-4">🎖 HeroSMP 🎖</h1>
+  <p class="mb-6 text-xl">Join the ultimate SMP experience!</p>
+  <a href="#" class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded text-lg font-bold">Join Server</a>
+</section>
+
+<!-- Ranks Section -->
+<section class="py-20 bg-gray-800">
+  <h2 class="text-4xl text-center mb-12">Server Ranks</h2>
+  <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+
+    <!-- HERO Rank -->
+    <div class="bg-gray-700 p-6 rounded shadow hover:scale-105 transition">
+      <h3 class="text-2xl font-bold mb-2">HERO</h3>
+      <p>Kit: HERO</p>
+      <p>Perks: COMING SOON</p>
+      <p>Price: ₹199/month</p>
+      <button class="mt-4 px-4 py-2 bg-green-600 rounded hover:bg-green-700 buy-btn" data-rank="HERO" data-price="199">Buy Rank</button>
+    </div>
+
+    <!-- EMPEROR Rank -->
+    <div class="bg-gray-700 p-6 rounded shadow hover:scale-105 transition">
+      <h3 class="text-2xl font-bold mb-2">EMPEROR</h3>
+      <p>Kit: EMPEROR</p>
+      <p>Perks: COMING SOON</p>
+      <p>Price: ₹149/month</p>
+      <button class="mt-4 px-4 py-2 bg-green-600 rounded hover:bg-green-700 buy-btn" data-rank="EMPEROR" data-price="149">Buy Rank</button>
+    </div>
+
+    <!-- CONQUEROR Rank -->
+    <div class="bg-gray-700 p-6 rounded shadow hover:scale-105 transition">
+      <h3 class="text-2xl font-bold mb-2">CONQUEROR</h3>
+      <p>Kit: CONQUEROR</p>
+      <p>Perks: COMING SOON</p>
+      <p>Price: ₹99/month</p>
+      <button class="mt-4 px-4 py-2 bg-green-600 rounded hover:bg-green-700 buy-btn" data-rank="CONQUEROR" data-price="99">Buy Rank</button>
+    </div>
+
+    <!-- VETERAN Rank -->
+    <div class="bg-gray-700 p-6 rounded shadow hover:scale-105 transition">
+      <h3 class="text-2xl font-bold mb-2">VETERAN</h3>
+      <p>Kit: VETERAN</p>
+      <p>Perks: COMING SOON</p>
+      <p>Price: ₹49/month</p>
+      <button class="mt-4 px-4 py-2 bg-green-600 rounded hover:bg-green-700 buy-btn" data-rank="VETERAN" data-price="49">Buy Rank</button>
+    </div>
+
+  </div>
+</section>
+
+<!-- Razorpay Checkout JS -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+document.querySelectorAll('.buy-btn').forEach(button=>{
+  button.onclick = async function(){
+    const rank = this.dataset.rank;
+    const price = parseInt(this.dataset.price) * 100; // in paise
+
+    var options = {
+      "key": "RAZORPAY_KEY", // Replace with your Razorpay key
+      "amount": price,
+      "currency": "INR",
+      "name": "HeroSMP",
+      "description": rank + " Rank",
+      "handler": function(response){
+          // Send to your backend webhook
+          fetch("https://YOUR_VPS_OR_NGROK_URL/webhook", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({
+              payment_id: response.razorpay_payment_id,
+              rank: rank,
+              dc_user: "DISCORD_USERNAME",
+              mc_user: "MC_USERNAME"
+            })
+          });
+      }
+    };
+    var rzp = new Razorpay(options);
+    rzp.open();
+  }
+});
+</script>
+
+</body>
+</html>
