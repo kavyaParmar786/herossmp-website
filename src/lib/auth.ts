@@ -1,8 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { NextRequest } from 'next/server'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
-
 export interface JWTPayload {
   userId: string
   username: string
@@ -10,13 +8,19 @@ export interface JWTPayload {
   role: 'USER' | 'STAFF' | 'ADMIN' | 'OWNER'
 }
 
+function getSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET is not defined in environment variables.')
+  return secret
+}
+
 export function signToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
+  return jwt.sign(payload, getSecret(), { expiresIn: '7d' })
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload
+    return jwt.verify(token, getSecret()) as JWTPayload
   } catch {
     return null
   }
@@ -57,6 +61,8 @@ export const ROLE_HIERARCHY = {
 }
 
 export function hasPermission(userRole: string, requiredRole: string): boolean {
-  return (ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] || 0) >=
-    (ROLE_HIERARCHY[requiredRole as keyof typeof ROLE_HIERARCHY] || 0)
+  return (
+    (ROLE_HIERARCHY[userRole as keyof typeof ROLE_HIERARCHY] ?? 0) >=
+    (ROLE_HIERARCHY[requiredRole as keyof typeof ROLE_HIERARCHY] ?? 0)
+  )
 }

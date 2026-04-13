@@ -1,30 +1,34 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI!
-
-if (!MONGODB_URI) {
-  throw new Error('Please define MONGODB_URI in .env.local')
-}
-
 declare global {
-  var mongoose: { conn: mongoose.Connection | null; promise: Promise<mongoose.Connection> | null }
-}
-
-let cached = global.mongoose
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null }
+  // eslint-disable-next-line no-var
+  var _mongoose: { conn: mongoose.Connection | null; promise: Promise<mongoose.Connection> | null } | undefined
 }
 
 async function connectDB(): Promise<mongoose.Connection> {
+  const MONGODB_URI = process.env.MONGODB_URI
+
+  if (!MONGODB_URI) {
+    throw new Error(
+      'MONGODB_URI is not defined. Add it to your Vercel environment variables or .env.local file.'
+    )
+  }
+
+  if (!global._mongoose) {
+    global._mongoose = { conn: null, promise: null }
+  }
+
+  const cached = global._mongoose
+
   if (cached.conn) return cached.conn
 
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      maxPoolSize: 10,
-    }
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => mongoose.connection)
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+      })
+      .then((m) => m.connection)
   }
 
   try {

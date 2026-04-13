@@ -5,10 +5,14 @@ import Order from '@/models/Order'
 import { requireAuth } from '@/lib/auth'
 import { calculateGST } from '@/lib/utils'
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-})
+function getRazorpay() {
+  const keyId = process.env.RAZORPAY_KEY_ID
+  const keySecret = process.env.RAZORPAY_KEY_SECRET
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials are not configured in environment variables.')
+  }
+  return new Razorpay({ key_id: keyId, key_secret: keySecret })
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,26 +26,22 @@ export async function POST(req: NextRequest) {
     }
 
     const totalAmount = items.reduce(
-      (sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity,
+      (sum: number, item: { price: number; quantity: number }) =>
+        sum + item.price * item.quantity,
       0
     )
 
     const { gst, total } = calculateGST(totalAmount)
-
-    // Amount in paise
     const amountInPaise = Math.round(total * 100)
 
+    const razorpay = getRazorpay()
     const razorpayOrder = await razorpay.orders.create({
       amount: amountInPaise,
       currency: 'INR',
       receipt: `order_${Date.now()}`,
-      notes: {
-        userId: user.userId,
-        username: user.username,
-      },
+      notes: { userId: user.userId, username: user.username },
     })
 
-    // Save pending order
     const order = await Order.create({
       userId: user.userId,
       username: user.username,
