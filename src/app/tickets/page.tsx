@@ -67,7 +67,6 @@ export default function TicketsPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="max-w-3xl mx-auto relative">
         <div className="flex items-center justify-between mb-8">
           <div>

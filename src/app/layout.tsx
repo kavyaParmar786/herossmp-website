@@ -4,11 +4,13 @@ import { AuthProvider } from '@/hooks/useAuth'
 import { CartProvider } from '@/hooks/useCart'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import VideoBackground from '@/components/layout/VideoBackground'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
   title: 'HeroS SMP — The Ultimate Survival Experience',
-  description: 'Join HeroS SMP — the most epic Minecraft survival multiplayer server. Ranked gameplay, custom features, and an incredible community.',
+  description:
+    'Join HeroS SMP — the most epic Minecraft survival multiplayer server. Ranked gameplay, custom features, and an incredible community.',
   keywords: 'minecraft, smp, survival, server, heros, herossmp',
   openGraph: {
     title: 'HeroS SMP',
@@ -23,11 +25,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-void text-slate-200 font-body antialiased">
         <AuthProvider>
           <CartProvider>
-            <div className="min-h-screen flex flex-col">
+            {/* Video background — fixed, behind everything */}
+            <VideoBackground />
+
+            <div className="relative z-10 min-h-screen flex flex-col">
               <Navbar />
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
+
             <Toaster
               position="top-right"
               toastOptions={{

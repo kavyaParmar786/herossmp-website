@@ -40,7 +40,6 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center px-4 py-8">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="fixed top-1/4 right-1/4 w-72 h-72 bg-hero-pink/8 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative w-full max-w-md">

@@ -55,7 +55,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="max-w-5xl mx-auto relative">
         {/* Header */}
         <div className="glass rounded-3xl p-8 mb-8">

@@ -22,7 +22,6 @@ export default function FAQPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="max-w-3xl mx-auto relative">
         <div className="text-center mb-12">
           <HelpCircle className="w-12 h-12 text-hero-violet mx-auto mb-4" />

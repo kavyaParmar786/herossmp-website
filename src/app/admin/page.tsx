@@ -9,8 +9,9 @@ import AdminTickets from '@/components/admin/AdminTickets'
 import AdminUsers from '@/components/admin/AdminUsers'
 import AdminSettings from '@/components/admin/AdminSettings'
 import AdminFAQ from '@/components/admin/AdminFAQ'
-import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard } from 'lucide-react'
+import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 const TABS = [
   { key: 'products', label: 'Products', icon: Package },
@@ -22,18 +23,57 @@ const TABS = [
 ]
 
 export default function AdminPage() {
-  const { user, isAdmin, loading: authLoading } = useAuth()
-  const router = useRouter()
+  const { user, isAdmin, loading } = useAuth()
   const [tab, setTab] = useState('products')
 
-  useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
-      router.push('/')
-    }
-  }, [user, isAdmin, authLoading, router])
+  // While auth is loading, show spinner — don't redirect yet
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner className="w-10 h-10" />
+      </div>
+    )
+  }
 
-  if (authLoading || !user || !isAdmin) {
-    return <div className="min-h-screen flex items-center justify-center"><Spinner className="w-10 h-10" /></div>
+  // Not logged in at all
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="glass rounded-2xl p-10 text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold text-white mb-2">Not Logged In</h1>
+          <p className="text-slate-400 mb-6">You need to sign in to access the admin panel.</p>
+          <Link href="/login?redirect=/admin" className="inline-flex items-center gap-2 px-6 py-3 btn-primary text-white font-bold rounded-xl">
+            Sign In
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  // Logged in but not admin/owner
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="glass rounded-2xl p-10 text-center max-w-md">
+          <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold text-white mb-2">Access Denied</h1>
+          <p className="text-slate-400 mb-2">
+            You are logged in as <span className="text-white font-bold">{user.username}</span>
+          </p>
+          <p className="text-slate-400 mb-2">
+            Your role is <span className="text-yellow-400 font-bold">{user.role}</span>
+          </p>
+          <p className="text-slate-500 text-sm mb-6">
+            Admin panel requires ADMIN or OWNER role.
+            Ask the server owner to upgrade your role.
+          </p>
+          <Link href="/dashboard" className="inline-flex items-center gap-2 px-6 py-3 glass text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const ActiveComponent = {
@@ -47,13 +87,15 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen pt-20 flex">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
 
       {/* Sidebar */}
       <aside className="relative w-56 flex-shrink-0 border-r border-white/5 pt-4 px-3">
-        <div className="flex items-center gap-2 px-3 py-3 mb-4">
+        <div className="flex items-center gap-2 px-3 py-3 mb-4 border-b border-white/5">
           <LayoutDashboard className="w-5 h-5 text-hero-violet" />
-          <span className="font-display font-bold text-white">Admin Panel</span>
+          <div>
+            <span className="font-display font-bold text-white text-sm block">Admin Panel</span>
+            <span className="text-xs text-hero-glow">{user.role}</span>
+          </div>
         </div>
         <div className="space-y-1">
           {TABS.map(({ key, label, icon: Icon }) => (
@@ -72,10 +114,15 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+        <div className="absolute bottom-4 left-3 right-3">
+          <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-slate-300 transition-colors rounded-lg hover:bg-white/5">
+            ← Back to Dashboard
+          </Link>
+        </div>
       </aside>
 
-      {/* Main */}
-      <main className="relative flex-1 p-6 overflow-y-auto">
+      {/* Main content */}
+      <main className="relative flex-1 p-6 overflow-y-auto min-h-screen">
         <ActiveComponent />
       </main>
     </div>

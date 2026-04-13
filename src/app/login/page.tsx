@@ -36,7 +36,6 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen pt-20 flex items-center justify-center px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-hero-purple/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative w-full max-w-md">

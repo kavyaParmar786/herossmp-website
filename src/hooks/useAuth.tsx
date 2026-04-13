@@ -21,16 +21,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // On mount: read from localStorage only — no network call that can fail
   useEffect(() => {
-    const stored = localStorage.getItem('auth')
-    if (stored) {
-      try {
-        const { user, token } = JSON.parse(stored)
-        setUser(user)
-        setToken(token)
-      } catch {}
+    try {
+      const stored = localStorage.getItem('auth')
+      if (stored) {
+        const { user: u, token: t } = JSON.parse(stored)
+        if (u && t) {
+          setUser(u)
+          setToken(t)
+        }
+      }
+    } catch {
+      localStorage.removeItem('auth')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -51,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success(`Welcome back, ${data.user.username}!`)
       return true
     } catch {
-      toast.error('Network error')
+      toast.error('Network error — please try again')
       return false
     }
   }
@@ -74,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.success('Account created! Welcome to HeroS SMP!')
       return true
     } catch {
-      toast.error('Network error')
+      toast.error('Network error — please try again')
       return false
     }
   }
@@ -83,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setToken(null)
     localStorage.removeItem('auth')
-    fetch('/api/auth/login', { method: 'DELETE' })
+    fetch('/api/auth/login', { method: 'DELETE' }).catch(() => {})
     toast.success('Logged out successfully')
   }
 

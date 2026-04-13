@@ -113,7 +113,6 @@ export default function CartPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen pt-32 flex flex-col items-center justify-center px-4">
-        <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
         <div className="relative text-center">
           <ShoppingCart className="w-24 h-24 text-slate-600 mx-auto mb-6" />
           <h1 className="font-display text-4xl font-bold text-white mb-3">Your cart is empty</h1>
@@ -128,7 +127,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="max-w-5xl mx-auto relative">
         <h1 className="font-display text-4xl font-bold text-white mb-8">Your Cart</h1>
 

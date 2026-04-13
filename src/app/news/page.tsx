@@ -19,7 +19,6 @@ export default function NewsPage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-50 pointer-events-none" />
       <div className="max-w-4xl mx-auto relative">
         <div className="text-center mb-12">
           <Newspaper className="w-12 h-12 text-hero-violet mx-auto mb-4" />

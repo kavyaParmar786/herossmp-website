@@ -34,7 +34,6 @@ export default function StorePage() {
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
-      <div className="fixed inset-0 bg-void bg-grid opacity-100 pointer-events-none" />
       <div className="max-w-7xl mx-auto relative">
         {/* Header */}
         <div className="text-center mb-12">
