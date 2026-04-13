@@ -13,7 +13,7 @@ if (!MONGODB_URI) { console.error('MONGODB_URI not set'); process.exit(1) }
 
 const username = process.env.OWNER_USERNAME || 'HerosAdmin'
 const email = process.env.OWNER_EMAIL || 'admin@herossmp.xyz'
-const password = process.env.OWNER_PASSWORD || 'ChangeMe123!'
+const password = process.env.OWNER_PASSWORD || 'heros786!'
 
 const UserSchema = new mongoose.Schema({
   username: String, email: String, password: String,
