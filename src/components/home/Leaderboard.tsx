@@ -1,14 +1,14 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LeaderboardEntry } from '@/types'
-import { Trophy, Sword, Coins, Clock, RefreshCw } from 'lucide-react'
+import { Trophy, Sword, Coins, Clock, Skull, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import Image from 'next/image'
 
 const TABS = [
-  { key: 'kills', label: 'Kills', icon: Sword },
-  { key: 'coins', label: 'Coins', icon: Coins },
-  { key: 'playtime', label: 'Playtime', icon: Clock },
+  { key: 'kills',    label: 'Kills',    icon: Sword,  color: 'text-red-400',    unit: '' },
+  { key: 'deaths',   label: 'Deaths',   icon: Skull,  color: 'text-slate-400',  unit: '' },
+  { key: 'coins',    label: 'Coins',    icon: Coins,  color: 'text-yellow-400', unit: '' },
+  { key: 'playtime', label: 'Playtime', icon: Clock,  color: 'text-cyan-400',   unit: '' },
 ]
 
 export default function Leaderboard() {
@@ -16,69 +16,79 @@ export default function Leaderboard() {
   const [sortBy, setSortBy] = useState('kills')
   const [loading, setLoading] = useState(true)
   const [lastRefresh, setLastRefresh] = useState(new Date())
+  const [error, setError] = useState(false)
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
+      setError(false)
       const res = await fetch(`/api/leaderboard?sortBy=${sortBy}&limit=10`)
+      if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       setEntries(data.entries || [])
       setLastRefresh(new Date())
     } catch {
-      console.error('Failed to fetch leaderboard')
+      setError(true)
     } finally {
       setLoading(false)
     }
-  }
+  }, [sortBy])
 
   useEffect(() => {
     setLoading(true)
+    setEntries([])
     fetchLeaderboard()
-  }, [sortBy])
+  }, [fetchLeaderboard])
 
   useEffect(() => {
     const interval = setInterval(fetchLeaderboard, 10000)
     return () => clearInterval(interval)
-  }, [sortBy])
+  }, [fetchLeaderboard])
 
   const getValue = (entry: LeaderboardEntry) => {
-    if (sortBy === 'kills') return entry.kills.toLocaleString()
-    if (sortBy === 'coins') return entry.coins.toLocaleString()
-    if (sortBy === 'playtime') {
-      const hours = Math.floor(entry.playtime / 60)
-      return `${hours}h`
+    switch (sortBy) {
+      case 'kills':    return entry.kills?.toLocaleString() ?? '0'
+      case 'deaths':   return entry.deaths?.toLocaleString() ?? '0'
+      case 'coins':    return entry.coins?.toLocaleString() ?? '0'
+      case 'playtime': {
+        const mins = entry.playtime ?? 0
+        const h = Math.floor(mins / 60)
+        const m = mins % 60
+        return h > 0 ? `${h}h ${m}m` : `${m}m`
+      }
+      default: return '0'
     }
-    return '0'
   }
-
-  const rankColors = [
-    'text-yellow-400',
-    'text-slate-300',
-    'text-amber-600',
-  ]
 
   const rankBg = [
     'bg-yellow-500/20 border-yellow-500/30',
     'bg-slate-400/10 border-slate-400/20',
     'bg-amber-700/20 border-amber-700/30',
   ]
+  const rankColors = ['text-yellow-400', 'text-slate-300', 'text-amber-500']
+
+  const activeTab = TABS.find(t => t.key === sortBy)!
 
   return (
-    <div className="glass rounded-2xl overflow-hidden">
+    <div className="glass rounded-2xl overflow-hidden h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-yellow-400" />
           <h3 className="font-display font-bold text-white">Leaderboard</h3>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <RefreshCw className="w-3 h-3 animate-spin" style={{ animationDuration: '10s' }} />
+        <button
+          onClick={() => { setLoading(true); fetchLeaderboard() }}
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          title="Refresh now"
+        >
+          <RefreshCw className={cn('w-3 h-3', loading && 'animate-spin')} />
           Live
-        </div>
+        </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-4 pt-3">
-        {TABS.map(({ key, label, icon: Icon }) => (
+      <div className="flex gap-1 px-4 pt-3 flex-wrap">
+        {TABS.map(({ key, label, icon: Icon, color }) => (
           <button
             key={key}
             onClick={() => setSortBy(key)}
@@ -89,21 +99,28 @@ export default function Leaderboard() {
                 : 'text-slate-400 hover:text-white hover:bg-white/5'
             )}
           >
-            <Icon className="w-3.5 h-3.5" />
+            <Icon className={cn('w-3.5 h-3.5', sortBy === key ? 'text-hero-glow' : color)} />
             {label}
           </button>
         ))}
       </div>
 
-      {/* Table */}
-      <div className="p-4 space-y-2">
+      {/* Entries */}
+      <div className="p-4 space-y-2 flex-1">
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-12 shimmer rounded-lg" />
           ))
+        ) : error ? (
+          <div className="text-center py-8 text-slate-500 text-sm">
+            <p className="mb-2">Could not load leaderboard</p>
+            <button onClick={fetchLeaderboard} className="text-hero-glow hover:underline text-xs">
+              Try again
+            </button>
+          </div>
         ) : entries.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">
-            No data yet. Be the first on the leaderboard!
+            No data yet — add players via Admin Panel
           </div>
         ) : (
           entries.map((entry, index) => (
@@ -111,37 +128,40 @@ export default function Leaderboard() {
               key={entry._id}
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200',
-                index < 3 ? rankBg[index] : 'border-white/5 hover:border-white/10 hover:bg-white/3'
+                index < 3
+                  ? rankBg[index]
+                  : 'border-white/5 hover:border-white/10'
               )}
             >
-              {/* Rank */}
-              <div className={cn(
-                'w-7 h-7 flex items-center justify-center font-bold text-sm rounded-full',
-                index < 3 ? rankColors[index] : 'text-slate-500'
-              )}>
-                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}
+              {/* Rank badge */}
+              <div className="w-7 text-center font-bold text-sm flex-shrink-0">
+                {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (
+                  <span className="text-slate-500">{index + 1}</span>
+                )}
               </div>
 
-              {/* Avatar */}
+              {/* MC head */}
               <img
-                src={`https://mc-heads.net/avatar/${entry.playerName}/32`}
+                src={`https://mc-heads.net/avatar/${encodeURIComponent(entry.playerName)}/32`}
                 alt={entry.playerName}
-                className="w-8 h-8 rounded-md"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-md flex-shrink-0"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://mc-heads.net/avatar/Steve/32`
+                  (e.target as HTMLImageElement).src = 'https://mc-heads.net/avatar/Steve/32'
                 }}
               />
 
               {/* Name */}
               <span className={cn(
-                'flex-1 font-semibold text-sm',
+                'flex-1 font-semibold text-sm truncate',
                 index < 3 ? rankColors[index] : 'text-slate-300'
               )}>
                 {entry.playerName}
               </span>
 
               {/* Value */}
-              <span className="font-mono font-bold text-sm text-white">
+              <span className={cn('font-mono font-bold text-sm', activeTab.color)}>
                 {getValue(entry)}
               </span>
             </div>
@@ -151,7 +171,7 @@ export default function Leaderboard() {
 
       <div className="px-6 pb-4 text-center">
         <p className="text-xs text-slate-600">
-          Auto-refreshes every 10 seconds · Last: {lastRefresh.toLocaleTimeString()}
+          Refreshes every 10s · {lastRefresh.toLocaleTimeString()}
         </p>
       </div>
     </div>

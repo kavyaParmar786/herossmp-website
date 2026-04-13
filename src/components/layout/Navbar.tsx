@@ -1,12 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import {
-  ShoppingCart, Menu, X, User, LogOut, LayoutDashboard,
-  Shield, Swords, ChevronDown, Ticket, Newspaper
+  ShoppingCart, Menu, X, LogOut, LayoutDashboard,
+  Shield, ChevronDown, Ticket,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -33,24 +34,22 @@ export default function Navbar() {
   }, [])
 
   return (
-    <nav
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'glass border-b border-hero-violet/20 py-3'
-          : 'bg-transparent py-5'
-      )}
-    >
+    <nav className={cn(
+      'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+      scrolled ? 'glass border-b border-hero-violet/20 py-2' : 'bg-transparent py-4'
+    )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
+
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-hero-purple to-hero-violet flex items-center justify-center shadow-glow-purple group-hover:shadow-glow-purple transition-all duration-300">
-              <Swords className="w-5 h-5 text-white" />
-            </div>
-            <span className="font-display text-xl font-bold text-white group-hover:text-hero-glow transition-colors">
-              HeroS<span className="text-hero-violet"> SMP</span>
-            </span>
+            <Image
+              src="/logo.png"
+              alt="HeroS SMP"
+              width={44}
+              height={44}
+              className="object-contain drop-shadow-[0_0_8px_rgba(139,92,246,0.6)] group-hover:drop-shadow-[0_0_12px_rgba(139,92,246,0.9)] transition-all duration-300"
+            />
           </Link>
 
           {/* Desktop nav */}
@@ -74,13 +73,10 @@ export default function Navbar() {
           {/* Right side */}
           <div className="flex items-center gap-3">
             {/* Cart */}
-            <Link
-              href="/cart"
-              className="relative p-2 rounded-lg glass glass-hover transition-all duration-200"
-            >
+            <Link href="/cart" className="relative p-2 rounded-lg glass glass-hover transition-all duration-200">
               <ShoppingCart className="w-5 h-5 text-slate-300" />
               {itemCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-hero-violet text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse-glow">
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-hero-violet text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
@@ -147,11 +143,8 @@ export default function Navbar() {
               </div>
             )}
 
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 rounded-lg glass"
-            >
+            {/* Mobile toggle */}
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden p-2 rounded-lg glass">
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -161,30 +154,18 @@ export default function Navbar() {
         {mobileOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-white/5 pt-4 space-y-1 animate-slide-up">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileOpen(false)}
+              <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
                 className={cn(
                   'block px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-                  pathname === link.href
-                    ? 'text-hero-glow bg-hero-purple/20'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                )}
-              >
+                  pathname === link.href ? 'text-hero-glow bg-hero-purple/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                )}>
                 {link.label}
               </Link>
             ))}
             {!user && (
               <div className="pt-2 flex gap-2">
-                <Link href="/login" onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center py-2 text-sm font-semibold text-slate-300 glass rounded-lg">
-                  Sign In
-                </Link>
-                <Link href="/register" onClick={() => setMobileOpen(false)}
-                  className="flex-1 text-center py-2 text-sm font-bold text-white btn-primary rounded-lg">
-                  Register
-                </Link>
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center py-2 text-sm font-semibold text-slate-300 glass rounded-lg">Sign In</Link>
+                <Link href="/register" onClick={() => setMobileOpen(false)} className="flex-1 text-center py-2 text-sm font-bold text-white btn-primary rounded-lg">Register</Link>
               </div>
             )}
           </div>

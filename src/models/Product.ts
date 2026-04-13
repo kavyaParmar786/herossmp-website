@@ -6,7 +6,8 @@ export interface IProduct extends Document {
   category: 'RANKS' | 'KEYS' | 'MONEY' | 'COINS' | 'LANDCLAIM' | 'PACKS'
   features: string[]
   description: string
-  image?: string
+  image?: string      // kept for backward compat
+  images?: string[]   // multiple images
   popular?: boolean
   color?: string
   active: boolean
@@ -25,6 +26,7 @@ const ProductSchema = new Schema<IProduct>(
     features: [{ type: String }],
     description: { type: String, default: '' },
     image: { type: String },
+    images: [{ type: String }],
     popular: { type: Boolean, default: false },
     color: { type: String, default: '#8b5cf6' },
     active: { type: Boolean, default: true },

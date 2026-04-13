@@ -9,31 +9,39 @@ import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
   title: 'HeroS SMP — The Ultimate Survival Experience',
-  description:
-    'Join HeroS SMP — the most epic Minecraft survival multiplayer server. Ranked gameplay, custom features, and an incredible community.',
+  description: 'Join HeroS SMP — the most epic Minecraft survival multiplayer server. Ranked gameplay, custom features, and an incredible community.',
   keywords: 'minecraft, smp, survival, server, heros, herossmp',
+  icons: {
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    apple: '/logo.png',
+    shortcut: '/logo.png',
+  },
   openGraph: {
     title: 'HeroS SMP',
     description: 'The Ultimate Minecraft Survival Experience',
     type: 'website',
+    images: [{ url: '/logo.png' }],
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className="bg-void text-slate-200 font-body antialiased">
         <AuthProvider>
           <CartProvider>
-            {/* Video background — fixed, behind everything */}
             <VideoBackground />
-
             <div className="relative z-10 min-h-screen flex flex-col">
               <Navbar />
               <main className="flex-1">{children}</main>
               <Footer />
             </div>
-
             <Toaster
               position="top-right"
               toastOptions={{

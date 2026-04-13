@@ -14,6 +14,7 @@ export interface Product {
   features: string[]
   description: string
   image?: string
+  images?: string[]
   popular?: boolean
   color?: string
   createdAt: string
@@ -67,6 +68,7 @@ export interface News {
   author: string
   tags: string[]
   image?: string
+  images?: string[]
   createdAt: string
 }
 

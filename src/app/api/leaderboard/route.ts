@@ -8,14 +8,15 @@ export async function GET(req: NextRequest) {
     await connectDB()
     const { searchParams } = new URL(req.url)
     const sortBy = searchParams.get('sortBy') || 'kills'
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50)
 
-    const validSortFields = ['kills', 'coins', 'playtime']
+    const validSortFields = ['kills', 'deaths', 'coins', 'playtime']
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'kills'
 
     const entries = await Leaderboard.find()
       .sort({ [sortField]: -1 })
       .limit(limit)
+      .lean()
 
     return NextResponse.json({ entries, sortBy: sortField })
   } catch (error) {
@@ -29,7 +30,12 @@ export async function POST(req: NextRequest) {
     requireRole(req, ['ADMIN', 'OWNER'])
     await connectDB()
 
-    const { playerName, kills, deaths, coins, playtime } = await req.json()
+    const body = await req.json()
+    const { playerName, kills = 0, deaths = 0, coins = 0, playtime = 0 } = body
+
+    if (!playerName) {
+      return NextResponse.json({ error: 'playerName is required' }, { status: 400 })
+    }
 
     const entry = await Leaderboard.findOneAndUpdate(
       { playerName },
