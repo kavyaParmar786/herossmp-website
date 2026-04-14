@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
 import User from '@/models/User'
 import { signToken } from '@/lib/auth'
+import { sendWelcomeEmail, sendNewPlayerNotification } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +12,6 @@ export async function POST(req: NextRequest) {
     if (!username || !email || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 })
     }
-
     if (password.length < 6) {
       return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
     }
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const user = await User.create({ username, email, password, role: 'USER' })
+    const user = await User.create({ username, email, password, role: 'USER', provider: 'email' })
 
     const token = signToken({
       userId: user._id.toString(),
@@ -32,6 +32,14 @@ export async function POST(req: NextRequest) {
       email: user.email,
       role: user.role,
     })
+
+    // Send emails in background (don't block response)
+    Promise.all([
+      sendWelcomeEmail(email, username),
+      process.env.ADMIN_EMAIL
+        ? sendNewPlayerNotification(process.env.ADMIN_EMAIL, username, email)
+        : Promise.resolve(),
+    ]).catch(() => {})
 
     const response = NextResponse.json({
       success: true,

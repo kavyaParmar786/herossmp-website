@@ -5,6 +5,7 @@ import { CartProvider } from '@/hooks/useCart'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import VideoBackground from '@/components/layout/VideoBackground'
+import LoadingScreen from '@/components/layout/LoadingScreen'
 import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
@@ -12,9 +13,7 @@ export const metadata: Metadata = {
   description: 'Join HeroS SMP — the most epic Minecraft survival multiplayer server. Ranked gameplay, custom features, and an incredible community.',
   keywords: 'minecraft, smp, survival, server, heros, herossmp',
   icons: {
-    icon: [
-      { url: '/logo.png', type: 'image/png' },
-    ],
+    icon: [{ url: '/logo.png', type: 'image/png' }],
     apple: '/logo.png',
     shortcut: '/logo.png',
   },
@@ -34,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="bg-void text-slate-200 font-body antialiased">
+        <LoadingScreen />
         <AuthProvider>
           <CartProvider>
             <VideoBackground />

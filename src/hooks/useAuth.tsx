@@ -21,16 +21,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // On mount: read from localStorage only — no network call that can fail
   useEffect(() => {
     try {
+      // Check for oauth-user cookie first (set by OAuth callback)
+      const cookies = document.cookie.split(';').reduce((acc, c) => {
+        const idx = c.indexOf('=')
+        if (idx === -1) return acc
+        const k = c.substring(0, idx).trim()
+        const v = c.substring(idx + 1).trim()
+        acc[k] = v
+        return acc
+      }, {} as Record<string, string>)
+
+      if (cookies['oauth-user']) {
+        try {
+          const oauthUser = JSON.parse(decodeURIComponent(cookies['oauth-user']))
+          setUser(oauthUser)
+          // Clear the cookie
+          document.cookie = 'oauth-user=; max-age=0; path=/'
+          // The httpOnly auth-token cookie is already set — no token in localStorage
+          // We can't read the httpOnly token but API calls will use the cookie automatically
+          localStorage.setItem('auth', JSON.stringify({ user: oauthUser, token: null }))
+          setLoading(false)
+          return
+        } catch {}
+      }
+
+      // Normal: read from localStorage
       const stored = localStorage.getItem('auth')
       if (stored) {
         const { user: u, token: t } = JSON.parse(stored)
-        if (u && t) {
-          setUser(u)
-          setToken(t)
-        }
+        if (u) { setUser(u); setToken(t) }
       }
     } catch {
       localStorage.removeItem('auth')
@@ -47,10 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Login failed')
-        return false
-      }
+      if (!res.ok) { toast.error(data.error || 'Login failed'); return false }
       setUser(data.user)
       setToken(data.token)
       localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }))
@@ -70,14 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ username, email, password }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Registration failed')
-        return false
-      }
+      if (!res.ok) { toast.error(data.error || 'Registration failed'); return false }
       setUser(data.user)
       setToken(data.token)
       localStorage.setItem('auth', JSON.stringify({ user: data.user, token: data.token }))
-      toast.success('Account created! Welcome to HeroS SMP!')
+      toast.success('Account created! Welcome to HeroS SMP! 🎮')
       return true
     } catch {
       toast.error('Network error — please try again')

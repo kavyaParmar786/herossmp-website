@@ -1,11 +1,36 @@
+'use client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useState, useEffect } from 'react'
 import { ArrowRight, Shield, Users, Swords, Zap } from 'lucide-react'
 import ServerStatusCard from '@/components/home/ServerStatus'
 import Leaderboard from '@/components/home/Leaderboard'
 import HomepageClient from './HomepageClient'
 
+interface Stats {
+  players: number
+  dailyBattles: number
+  ranks: number
+  uptime: string
+}
+
 export default function HomePage() {
+  const [stats, setStats] = useState<Stats>({ players: 0, dailyBattles: 0, ranks: 8, uptime: '99.9%' })
+
+  useEffect(() => {
+    fetch('/api/stats')
+      .then(r => r.json())
+      .then(setStats)
+      .catch(() => {})
+  }, [])
+
+  const statCards = [
+    { icon: Users,  label: 'Registered Players', value: stats.players > 0 ? `${stats.players.toLocaleString()}+` : '—' },
+    { icon: Swords, label: 'Total PvP Kills',     value: stats.dailyBattles > 0 ? `${stats.dailyBattles.toLocaleString()}+` : '—' },
+    { icon: Shield, label: 'Ranks Available',      value: stats.ranks.toString() },
+    { icon: Zap,   label: 'Uptime',               value: stats.uptime },
+  ]
+
   return (
     <div className="relative min-h-screen">
       {/* Hero */}
@@ -18,16 +43,19 @@ export default function HomePage() {
             Server is Live — Join Now!
           </div>
 
-          {/* Logo image */}
+          {/* Logo with transparent bg via mix-blend-mode */}
           <div className="flex justify-center mb-6 animate-float">
-            <Image
-              src="/logo.png"
-              alt="HeroS SMP"
-              width={280}
-              height={180}
-              priority
-              className="object-contain drop-shadow-[0_0_30px_rgba(139,92,246,0.5)]"
-            />
+            <div style={{ mixBlendMode: 'screen' }}>
+              <Image
+                src="/logo.png"
+                alt="HeroS SMP"
+                width={280}
+                height={180}
+                priority
+                className="object-contain drop-shadow-[0_0_30px_rgba(139,92,246,0.5)]"
+                style={{ mixBlendMode: 'screen' }}
+              />
+            </div>
           </div>
 
           <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto mb-10 animate-fade-in font-light leading-relaxed">
@@ -53,14 +81,9 @@ export default function HomePage() {
             </a>
           </div>
 
-          {/* Stats */}
+          {/* Stats — real data from DB */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
-            {[
-              { icon: Users,  label: 'Active Players', value: '1,200+' },
-              { icon: Swords, label: 'Daily Battles',  value: '5,000+' },
-              { icon: Shield, label: 'Ranks Available', value: '8' },
-              { icon: Zap,   label: 'Uptime',          value: '99.9%' },
-            ].map(({ icon: Icon, label, value }) => (
+            {statCards.map(({ icon: Icon, label, value }) => (
               <div key={label} className="glass rounded-xl p-4 text-center">
                 <Icon className="w-5 h-5 text-hero-violet mx-auto mb-2" />
                 <div className="font-display font-bold text-xl text-white">{value}</div>
