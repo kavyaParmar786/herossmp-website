@@ -58,6 +58,25 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// DELETE used by admin panel
+export async function DELETE(req: NextRequest) {
+  try {
+    const { requireRole } = await import('@/lib/auth')
+    requireRole(req, ['ADMIN', 'OWNER'])
+    await connectDB()
+    const { searchParams } = new URL(req.url)
+    const playerName = searchParams.get('playerName')
+    if (!playerName) return NextResponse.json({ error: 'playerName required' }, { status: 400 })
+    await Leaderboard.deleteOne({ playerName })
+    return NextResponse.json({ success: true })
+  } catch (error: unknown) {
+    if (error instanceof Error && ['Unauthorized', 'Forbidden'].includes(error.message)) {
+      return NextResponse.json({ error: error.message }, { status: error.message === 'Unauthorized' ? 401 : 403 })
+    }
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+  }
+}
+
 // POST used by Minecraft plugin (plugin_key auth) OR admin panel (JWT)
 export async function POST(req: NextRequest) {
   try {
