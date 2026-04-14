@@ -5,7 +5,15 @@ const nextConfig = {
       { protocol: 'https', hostname: 'crafatar.com' },
       { protocol: 'https', hostname: 'mc-heads.net' },
       { protocol: 'https', hostname: 'minotar.net' },
+      { protocol: 'https', hostname: 'cdn.discordapp.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'pbs.twimg.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: '**.githubusercontent.com' },
     ],
+    // Allow unoptimized for external MC head images in <img> tags
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   experimental: {
     serverActions: { allowedOrigins: ['*'] },

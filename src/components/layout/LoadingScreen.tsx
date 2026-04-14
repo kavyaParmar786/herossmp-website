@@ -5,90 +5,85 @@ import Image from 'next/image'
 export default function LoadingScreen() {
   const [visible, setVisible] = useState(true)
   const [fadeOut, setFadeOut] = useState(false)
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
-    // Check if already shown this session
-    const shown = sessionStorage.getItem('loading-shown')
+    const shown = sessionStorage.getItem('hs-loaded')
     if (shown) { setVisible(false); return }
 
-    const timer = setTimeout(() => {
+    // Animate progress bar
+    const steps = [
+      { pct: 30, delay: 200 },
+      { pct: 60, delay: 800 },
+      { pct: 85, delay: 1400 },
+      { pct: 100, delay: 2000 },
+    ]
+    const timers: ReturnType<typeof setTimeout>[] = []
+    steps.forEach(({ pct, delay }) => {
+      timers.push(setTimeout(() => setProgress(pct), delay))
+    })
+
+    const fadeTimer = setTimeout(() => {
       setFadeOut(true)
       setTimeout(() => {
         setVisible(false)
-        sessionStorage.setItem('loading-shown', '1')
-      }, 700)
-    }, 2800)
+        sessionStorage.setItem('hs-loaded', '1')
+      }, 600)
+    }, 2600)
 
-    return () => clearTimeout(timer)
+    return () => { timers.forEach(clearTimeout); clearTimeout(fadeTimer) }
   }, [])
 
   if (!visible) return null
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity duration-700 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
-      style={{
-        background: 'radial-gradient(ellipse at center, #0d0520 0%, #050508 70%)',
-      }}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center transition-opacity duration-600 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
+      style={{ background: 'radial-gradient(ellipse at 30% 40%, #0d0520 0%, #050508 60%, #020205 100%)' }}
     >
-      {/* Animated purple glow blobs */}
-      <div
-        className="absolute w-[500px] h-[500px] rounded-full pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%)',
-          animation: 'pulse 2s ease-in-out infinite',
-        }}
-      />
-
-      {/* Logo */}
-      <div
-        className="relative mb-8"
-        style={{
-          animation: 'float 3s ease-in-out infinite',
-          filter: 'drop-shadow(0 0 40px rgba(139,92,246,0.6))',
-        }}
-      >
-        <div style={{ mixBlendMode: 'screen' }}>
-          <Image
-            src="/logo.png"
-            alt="HeroS SMP"
-            width={240}
-            height={160}
-            priority
-            style={{ mixBlendMode: 'screen' }}
-          />
-        </div>
+      {/* Background glow layers */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-20"
+          style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.5) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] rounded-full opacity-30"
+          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 70%)', animation: 'goldPulse 2s ease-in-out infinite' }} />
+        <div className="absolute inset-0 bg-grid-pattern opacity-30" style={{ backgroundSize: '50px 50px' }} />
       </div>
 
-      {/* Loading bar */}
-      <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden mb-4">
+      {/* Logo — transparent PNG, gold glow */}
+      <div className="relative mb-10 animate-float">
+        <Image
+          src="/logo.png"
+          alt="HeroS SMP"
+          width={280}
+          height={185}
+          priority
+          className="object-contain"
+          style={{ filter: 'drop-shadow(0 0 30px rgba(212,175,55,0.6)) drop-shadow(0 0 60px rgba(124,58,237,0.3))' }}
+        />
+      </div>
+
+      {/* Loading bar track */}
+      <div className="w-72 h-1 rounded-full mb-4 overflow-hidden"
+        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(212,175,55,0.1)' }}>
         <div
-          className="h-full rounded-full"
+          className="h-full rounded-full transition-all duration-500 ease-out"
           style={{
-            background: 'linear-gradient(90deg, #7c3aed, #a855f7, #06b6d4)',
-            animation: 'loadbar 2.5s ease-out forwards',
+            width: `${progress}%`,
+            background: 'linear-gradient(90deg, #7c3aed, #D4AF37, #FFD700)',
+            boxShadow: '0 0 10px rgba(212,175,55,0.6)',
           }}
         />
       </div>
 
-      <p className="text-slate-500 text-sm tracking-widest uppercase">
-        Loading the arena…
+      <p className="text-slate-600 text-xs tracking-[0.3em] uppercase font-semibold">
+        Entering the Arena…
       </p>
 
       <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-        }
-        @keyframes loadbar {
-          0% { width: 0%; }
-          30% { width: 40%; }
-          70% { width: 75%; }
-          100% { width: 100%; }
-        }
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.1); opacity: 1; }
+        @keyframes goldPulse {
+          0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.3; }
+          50% { transform: translate(-50%,-50%) scale(1.2); opacity: 0.5; }
         }
       `}</style>
     </div>
