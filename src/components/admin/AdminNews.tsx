@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { News } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { Button, Input, Textarea, Card } from '@/components/ui'
+import { FileUploader } from '@/components/ui/FileUploader'
 import { formatDate } from '@/lib/utils'
 import { Plus, Pencil, Trash2, X, Calendar } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -94,7 +95,11 @@ export default function AdminNews() {
             <Input label="Excerpt (optional)" value={editing.excerpt} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} placeholder="Short summary shown on homepage" />
             <Textarea label="Content" rows={6} value={editing.content} onChange={(e) => setEditing({ ...editing, content: e.target.value })} placeholder="Full article content..." />
             <Input label="Tags (comma-separated)" value={editing.tags} onChange={(e) => setEditing({ ...editing, tags: e.target.value })} placeholder="update, event, patch" />
-            <Input label="Image URL (optional)" value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="https://..." />
+            <FileUploader
+              label="Post Image (optional)"
+              value={editing.image}
+              onUpload={(url) => setEditing({ ...editing, image: url })}
+            />
           </div>
           <div className="flex justify-end gap-3 mt-5">
             <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Product } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { Button, Input, Select, Textarea, Card, Badge } from '@/components/ui'
+import { FileUploader } from '@/components/ui/FileUploader'
 import { CATEGORY_META, formatCurrency } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { Plus, Pencil, Trash2, X, Star, Image as ImageIcon } from 'lucide-react'
@@ -128,38 +129,35 @@ export default function AdminProducts() {
 
             {/* Images */}
             <div className="sm:col-span-2">
-              <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-hero-violet" />
-                Product Images (URLs)
+                Product Images
               </label>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {(editing.images || ['']).map((img, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <div className="flex-1 flex gap-2 items-center">
-                      {img && (
-                        <img
-                          src={img}
-                          alt=""
-                          className="w-10 h-8 rounded object-cover border border-white/10 flex-shrink-0"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
-                      )}
-                      <input
-                        value={img}
-                        onChange={e => updateImage(i, e.target.value)}
-                        className="flex-1 glass rounded-lg px-3 py-2 text-sm text-white bg-transparent border border-white/10 focus:border-hero-violet/60 focus:outline-none"
-                        placeholder={i === 0 ? 'Main image URL (https://...)' : `Image ${i + 1} URL`}
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeImage(i)}
-                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <div key={i} className="relative">
+                    <FileUploader
+                      label={i === 0 ? 'Main Image' : `Image ${i + 1}`}
+                      value={img}
+                      onUpload={(url) => updateImage(i, url)}
+                    />
+                    {(editing.images || []).length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute top-0 right-0 p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 ))}
-                <button onClick={addImage} className="text-sm text-hero-glow hover:text-hero-violet transition-colors flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={addImage}
+                  className="text-sm text-hero-glow hover:text-hero-violet transition-colors flex items-center gap-1 mt-1"
+                >
                   <Plus className="w-3.5 h-3.5" /> Add another image
                 </button>
               </div>
