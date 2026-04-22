@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
 import { CartProvider } from '@/hooks/useCart'
@@ -36,7 +37,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-void text-slate-200 font-body antialiased">
-        <LoadingScreen />
+        <Suspense fallback={null}>
+          <LoadingScreen />
+        </Suspense>
         <AuthProvider>
           <CartProvider>
             <VideoBackground />

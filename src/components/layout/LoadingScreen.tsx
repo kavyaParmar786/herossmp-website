@@ -3,15 +3,23 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 
 export default function LoadingScreen() {
+  const [mounted, setMounted] = useState(false)
+  const [visible, setVisible] = useState(true)
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState(0)
   const phases = ['Connecting to server…', 'Loading assets…', 'Entering world…']
 
   useEffect(() => {
+    setMounted(true)
     const interval = setInterval(() => {
       setProgress(p => {
         const next = p + Math.random() * 18
-        if (next >= 100) { clearInterval(interval); return 100 }
+        if (next >= 100) {
+          clearInterval(interval)
+          // Fade out after reaching 100%
+          setTimeout(() => setVisible(false), 400)
+          return 100
+        }
         return next
       })
     }, 120)
@@ -20,6 +28,9 @@ export default function LoadingScreen() {
     }, 900)
     return () => { clearInterval(interval); clearInterval(phaseInterval) }
   }, [])
+
+  // Don't render anything on server — avoids hydration mismatch entirely
+  if (!mounted || !visible) return null
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"

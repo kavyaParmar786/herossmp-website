@@ -24,6 +24,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20)
@@ -87,7 +90,7 @@ export default function Navbar() {
             {/* Cart */}
             <Link href="/cart" className="relative p-2.5 glass rounded-xl hover:bg-white/10 transition-all duration-200 group">
               <ShoppingCart className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-              {itemCount > 0 && (
+              {mounted && itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-hero-purple text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {itemCount}
                 </span>

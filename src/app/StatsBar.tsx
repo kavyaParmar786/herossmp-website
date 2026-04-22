@@ -6,8 +6,10 @@ interface Stats { players: number; dailyBattles: number; ranks: number; uptime: 
 
 export default function StatsBar() {
   const [stats, setStats] = useState<Stats>({ players: 0, dailyBattles: 0, ranks: 8, uptime: '99.9%' })
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     fetch('/api/stats').then(r => r.json()).then(setStats).catch(() => {})
   }, [])
 
@@ -21,7 +23,7 @@ export default function StatsBar() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto stagger">
       {statCards.map(({ icon: Icon, label, value, color }) => (
-        <div key={label} className="glass-gold rounded-2xl p-5 text-center group hover:scale-105 transition-transform duration-300 animate-fade-in opacity-0">
+        <div key={label} className={`glass-gold rounded-2xl p-5 text-center group hover:scale-105 transition-transform duration-300 ${mounted ? 'animate-fade-in opacity-0' : ''}`}>
           <div className="w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center"
             style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.15)' }}>
             <Icon className={`w-5 h-5 ${color}`} />
