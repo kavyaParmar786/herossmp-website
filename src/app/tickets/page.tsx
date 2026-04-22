@@ -24,9 +24,11 @@ export default function TicketsPage() {
   }, [user, authLoading, router])
 
   const loadTickets = async () => {
-    if (!token) return
     try {
-      const res = await fetch('/api/tickets', { headers: { Authorization: `Bearer ${token}` } })
+      // token may be null for OAuth users — cookie auth is used as fallback automatically
+      const headers: Record<string, string> = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch('/api/tickets', { headers, credentials: 'include' })
       const data = await res.json()
       setTickets(data.tickets || [])
     } catch { console.error('Failed to load tickets') }
@@ -43,9 +45,12 @@ export default function TicketsPage() {
     }
     setCreating(true)
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
       const res = await fetch('/api/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(form),
       })
       const data = await res.json()

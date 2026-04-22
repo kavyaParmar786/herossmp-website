@@ -25,9 +25,10 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
   }, [user, authLoading, router])
 
   const loadTicket = async () => {
-    if (!token) return
     try {
-      const res = await fetch(`/api/tickets/${id}`, { headers: { Authorization: `Bearer ${token}` } })
+      const headers: Record<string, string> = {}
+      if (token) headers['Authorization'] = `Bearer ${token}`
+      const res = await fetch(`/api/tickets/${id}`, { headers, credentials: 'include' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setTicket(data.ticket)
@@ -43,7 +44,7 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
 
   // Polling every 5s
   useEffect(() => {
-    if (!user || !token) return
+    if (!user) return
     const interval = setInterval(loadTicket, 5000)
     return () => clearInterval(interval)
   }, [user, token, id])
@@ -58,9 +59,12 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
     if (!message.trim()) return
     setSending(true)
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
       const res = await fetch(`/api/tickets/${id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({ content: message }),
       })
       const data = await res.json()
@@ -75,11 +79,13 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
   }
 
   const handleStatusChange = async (status: string) => {
-    if (!token) return
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (token) headers['Authorization'] = `Bearer ${token}`
       const res = await fetch(`/api/tickets/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers,
+        credentials: 'include',
         body: JSON.stringify({ status }),
       })
       const data = await res.json()
@@ -205,7 +211,7 @@ export default function TicketChatPage({ params }: { params: Promise<{ id: strin
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault()
-                    handleSend(e)
+                    if (message.trim()) handleSend(e as unknown as React.FormEvent)
                   }
                 }}
               />
