@@ -94,11 +94,7 @@ export default function AdminNews() {
             <Input label="Excerpt (optional)" value={editing.excerpt} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} placeholder="Short summary shown on homepage" />
             <Textarea label="Content" rows={6} value={editing.content} onChange={(e) => setEditing({ ...editing, content: e.target.value })} placeholder="Full article content..." />
             <Input label="Tags (comma-separated)" value={editing.tags} onChange={(e) => setEditing({ ...editing, tags: e.target.value })} placeholder="update, event, patch" />
-            <FileUploader 
-              label="Feature Image" 
-              value={editing.image} 
-              onUpload={(url) => setEditing({ ...editing, image: url })} 
-            />
+            <Input label="Image URL (optional)" value={editing.image} onChange={(e) => setEditing({ ...editing, image: e.target.value })} placeholder="https://..." />
           </div>
           <div className="flex justify-end gap-3 mt-5">
             <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
