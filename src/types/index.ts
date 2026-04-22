@@ -111,3 +111,89 @@ export interface ServerStatus {
   version: string
   ip: string
 }
+
+export type QuestionType = 'MCQ' | 'QNA' | 'YES_NO' | 'RATING' | 'SHORT' | 'LONG'
+
+export interface ApplicationQuestion {
+  _id: string
+  label: string
+  type: QuestionType
+  required: boolean
+  options?: string[]
+  placeholder?: string
+}
+
+export interface ApplicationFormType {
+  _id: string
+  title: string
+  description: string
+  slug: string
+  role: string
+  questions: ApplicationQuestion[]
+  isOpen: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApplicationAnswer {
+  questionId: string
+  questionLabel: string
+  answer: string
+}
+
+export interface ApplicationSubmissionType {
+  _id: string
+  formId: string
+  formTitle: string
+  userId: string
+  username: string
+  answers: ApplicationAnswer[]
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  staffNote?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type QuestionType = 'MCQ' | 'QNA' | 'YES_NO' | 'RATING' | 'SHORT' | 'LONG'
+
+export interface ApplicationQuestion {
+  _id: string
+  label: string
+  type: QuestionType
+  required: boolean
+  options?: string[]
+  placeholder?: string
+}
+
+export interface ApplicationForm {
+  _id: string
+  title: string
+  description: string
+  slug: string
+  role: string
+  questions: ApplicationQuestion[]
+  isOpen: boolean
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApplicationAnswer {
+  questionId: string
+  questionLabel: string
+  answer: string
+}
+
+export interface ApplicationSubmission {
+  _id: string
+  formId: string
+  formTitle: string
+  userId: string
+  username: string
+  answers: ApplicationAnswer[]
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  staffNote?: string
+  createdAt: string
+  updatedAt: string
+}
