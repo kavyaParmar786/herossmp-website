@@ -153,9 +153,9 @@ export function Badge({ children, variant = 'default', className }: BadgeProps) 
 }
 
 // ── Card ──────────────────────────────────────────────────────────────────────
-export function Card({ children, className, hover = false }: { children: React.ReactNode; className?: string; hover?: boolean }) {
+export function Card({ children, className, hover = false, style }: { children: React.ReactNode; className?: string; hover?: boolean; style?: React.CSSProperties }) {
   return (
-    <div className={cn('glass rounded-2xl p-6', hover && 'glass-hover cursor-pointer transition-all duration-300', className)}>
+    <div className={cn('glass rounded-2xl p-6', hover && 'glass-hover cursor-pointer transition-all duration-300', className)} style={style}>
       {children}
     </div>
   )
