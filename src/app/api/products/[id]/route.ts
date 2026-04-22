@@ -1,37 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
 import Product from '@/models/Product'
-import { requireRole } from '@/lib/auth'
+import { requireAuth, hasPermission } from '@/lib/auth'
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    requireRole(req, ['ADMIN', 'OWNER'])
+    const { id } = await params
+    const user = requireAuth(req)
+    if (!hasPermission(user.role, 'ADMIN')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     await connectDB()
     const body = await req.json()
-
-    const product = await Product.findByIdAndUpdate(params.id, body, { new: true })
-    if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 })
-
+    const product = await Product.findByIdAndUpdate(id, body, { new: true })
+    if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json({ product })
   } catch (error: unknown) {
-    if (error instanceof Error && ['Unauthorized', 'Forbidden'].includes(error.message)) {
-      return NextResponse.json({ error: error.message }, { status: error.message === 'Unauthorized' ? 401 : 403 })
-    }
-    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 })
+    if (error instanceof Error && error.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    requireRole(req, ['ADMIN', 'OWNER'])
+    const { id } = await params
+    const user = requireAuth(req)
+    if (!hasPermission(user.role, 'ADMIN')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     await connectDB()
-
-    await Product.findByIdAndDelete(params.id)
+    await Product.findByIdAndDelete(id)
     return NextResponse.json({ success: true })
   } catch (error: unknown) {
-    if (error instanceof Error && ['Unauthorized', 'Forbidden'].includes(error.message)) {
-      return NextResponse.json({ error: error.message }, { status: error.message === 'Unauthorized' ? 401 : 403 })
-    }
-    return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 })
+    if (error instanceof Error && error.message === 'Unauthorized') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
   }
 }

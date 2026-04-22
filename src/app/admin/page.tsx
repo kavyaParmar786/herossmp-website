@@ -10,7 +10,8 @@ import AdminUsers from '@/components/admin/AdminUsers'
 import AdminSettings from '@/components/admin/AdminSettings'
 import AdminFAQ from '@/components/admin/AdminFAQ'
 import AdminLeaderboard from '@/components/admin/AdminLeaderboard'
-import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard, AlertTriangle, Trophy } from 'lucide-react'
+import AdminApplications from '@/components/admin/AdminApplications'
+import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard, AlertTriangle, Trophy, ClipboardList } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'products', label: 'Products', icon: Package },
   { key: 'news', label: 'News', icon: Newspaper },
   { key: 'tickets', label: 'Tickets', icon: Ticket },
+  { key: 'applications', label: 'Applications', icon: ClipboardList },
   { key: 'users', label: 'Users', icon: Users },
   { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { key: 'faq', label: 'FAQ', icon: HelpCircle },
@@ -28,7 +30,6 @@ export default function AdminPage() {
   const { user, isAdmin, loading } = useAuth()
   const [tab, setTab] = useState('products')
 
-  // While auth is loading, show spinner — don't redirect yet
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -37,7 +38,6 @@ export default function AdminPage() {
     )
   }
 
-  // Not logged in at all
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -53,7 +53,6 @@ export default function AdminPage() {
     )
   }
 
-  // Logged in but not admin/owner
   if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -82,6 +81,7 @@ export default function AdminPage() {
     products: AdminProducts,
     news: AdminNews,
     tickets: AdminTickets,
+    applications: AdminApplications,
     users: AdminUsers,
     leaderboard: AdminLeaderboard,
     faq: AdminFAQ,
@@ -90,7 +90,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen pt-20 flex">
-
       {/* Sidebar */}
       <aside className="relative w-56 flex-shrink-0 border-r border-white/5 pt-4 px-3">
         <div className="flex items-center gap-2 px-3 py-3 mb-4 border-b border-white/5">
