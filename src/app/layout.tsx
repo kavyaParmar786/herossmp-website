@@ -31,9 +31,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="icon" href="/logo.png" type="image/png" />
         <link rel="apple-touch-icon" href="/logo.png" />
-        {/* Performance: preconnect to Google Fonts */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className="bg-void text-slate-200 font-body antialiased">
         <LoadingScreen />
@@ -42,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <VideoBackground />
             <div className="relative z-10 min-h-screen flex flex-col">
               <Navbar />
-              <main className="flex-1 page-enter">{children}</main>
+              <main className="flex-1">{children}</main>
               <Footer />
             </div>
             <Toaster

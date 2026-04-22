@@ -128,41 +128,37 @@ export default function AdminProducts() {
 
             {/* Images */}
             <div className="sm:col-span-2">
-              <label className="block text-sm font-semibold text-slate-300 mb-2 flex items-center gap-2">
+              <label className="block text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-hero-violet" />
-                Product Images (URLs)
+                Product Images
               </label>
-              <div className="space-y-2">
+              <div className="grid sm:grid-cols-2 gap-4">
                 {(editing.images || ['']).map((img, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <div className="flex-1 flex gap-2 items-center">
-                      {img && (
-                        <img
-                          src={img}
-                          alt=""
-                          className="w-10 h-8 rounded object-cover border border-white/10 flex-shrink-0"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-                        />
-                      )}
-                      <input
-                        value={img}
-                        onChange={e => updateImage(i, e.target.value)}
-                        className="flex-1 glass rounded-lg px-3 py-2 text-sm text-white bg-transparent border border-white/10 focus:border-hero-violet/60 focus:outline-none"
-                        placeholder={i === 0 ? 'Main image URL (https://...)' : `Image ${i + 1} URL`}
-                      />
-                    </div>
-                    <button
-                      onClick={() => removeImage(i)}
-                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg flex-shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                  <div key={i} className="space-y-2">
+                    <FileUploader
+                      value={img}
+                      onUpload={(url) => updateImage(i, url)}
+                      label={i === 0 ? "Main Image" : `Additional Image ${i + 1}`}
+                    />
+                    {i > 0 && (
+                      <button
+                        onClick={() => removeImage(i)}
+                        className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remove image slot
+                      </button>
+                    )}
                   </div>
                 ))}
-                <button onClick={addImage} className="text-sm text-hero-glow hover:text-hero-violet transition-colors flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Add another image
-                </button>
               </div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={addImage} 
+                className="mt-4 text-hero-glow border border-hero-violet/20 hover:bg-hero-violet/10"
+              >
+                <Plus className="w-4 h-4" /> Add another image slot
+              </Button>
             </div>
 
             {/* Features */}

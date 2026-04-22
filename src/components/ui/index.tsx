@@ -180,3 +180,5 @@ export function SectionHeading({ title, subtitle, className }: { title: string; 
     </div>
   )
 }
+
+export * from './FileUploader'

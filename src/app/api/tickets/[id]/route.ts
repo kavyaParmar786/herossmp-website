@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
 import Ticket from '@/models/Ticket'
 import { requireAuth, hasPermission } from '@/lib/auth'
-import mongoose from 'mongoose'
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
     const user = requireAuth(req)
     await connectDB()
 
-    const ticket = await Ticket.findById(id)
+    const ticket = await Ticket.findById(params.id)
     if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
 
     const canView = hasPermission(user.role, 'STAFF') || ticket.userId.toString() === user.userId
@@ -25,16 +23,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
     const user = requireAuth(req)
     await connectDB()
 
     const { content } = await req.json()
     if (!content?.trim()) return NextResponse.json({ error: 'Message required' }, { status: 400 })
 
-    const ticket = await Ticket.findById(id)
+    const ticket = await Ticket.findById(params.id)
     if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
 
     const canReply = hasPermission(user.role, 'STAFF') || ticket.userId.toString() === user.userId
@@ -45,12 +42,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     ticket.messages.push({
-      userId: new mongoose.Types.ObjectId(user.userId) as unknown as mongoose.Types.ObjectId,
+      userId: user.userId as unknown as import('mongoose').Types.ObjectId,
       username: user.username,
       role: user.role,
       content: content.trim(),
       createdAt: new Date(),
-      _id: new mongoose.Types.ObjectId(),
+      _id: new (require('mongoose').Types.ObjectId)(),
     })
 
     if (hasPermission(user.role, 'STAFF') && ticket.status === 'OPEN') {
@@ -68,9 +65,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = await params
     const user = requireAuth(req)
     if (!hasPermission(user.role, 'STAFF')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -78,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await connectDB()
 
     const { status } = await req.json()
-    const ticket = await Ticket.findByIdAndUpdate(id, { status }, { new: true })
+    const ticket = await Ticket.findByIdAndUpdate(params.id, { status }, { new: true })
     if (!ticket) return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
 
     return NextResponse.json({ ticket })
