@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { use } from 'react'
 import { Product } from '@/types'
 import ProductCard from '@/components/store/ProductCard'
 import { CATEGORY_META } from '@/lib/utils'
@@ -8,8 +7,8 @@ import { Skeleton } from '@/components/ui'
 import { ShoppingBag } from 'lucide-react'
 import Link from 'next/link'
 
-export default function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
-  const { category } = use(params)
+export default function CategoryPage({ params }: { params: { category: string } }) {
+  const { category } = params
   const categoryKey = category.toUpperCase() as keyof typeof CATEGORY_META
   const meta = CATEGORY_META[categoryKey]
 

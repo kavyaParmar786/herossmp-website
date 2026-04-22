@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef, use } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { Ticket } from '@/types'
@@ -10,8 +10,8 @@ import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 
-export default function TicketChatPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function TicketChatPage({ params }: { params: { id: string } }) {
+  const { id } = params
   const { user, token, isStaff, loading: authLoading } = useAuth()
   const router = useRouter()
   const [ticket, setTicket] = useState<Ticket | null>(null)

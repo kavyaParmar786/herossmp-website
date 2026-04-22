@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { Button, Card, Spinner } from '@/components/ui'
@@ -12,8 +12,8 @@ type QuestionType = 'MCQ' | 'QNA' | 'YES_NO' | 'RATING' | 'SHORT' | 'LONG'
 interface Question { _id: string; label: string; type: QuestionType; required: boolean; options?: string[]; placeholder?: string }
 interface ApplicationForm { _id: string; title: string; description: string; slug: string; role: string; questions: Question[]; isOpen: boolean }
 
-export default function ApplyFormPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params)
+export default function ApplyFormPage({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const { user, token, loading: authLoading } = useAuth()
   const router = useRouter()
   const [form, setForm] = useState<ApplicationForm | null>(null)
