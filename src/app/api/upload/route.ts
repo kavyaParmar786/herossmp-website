@@ -6,6 +6,13 @@ cloudinary.config({
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
+export async function POST(req: NextRequest) {
+  console.log('Cloudinary config:', {
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY ? '✓ set' : '✗ missing',
+    api_secret: process.env.CLOUDINARY_API_SECRET ? '✓ set' : '✗ missing',
+  })
+  // ...rest of code
 
 export async function POST(req: NextRequest) {
   try {
