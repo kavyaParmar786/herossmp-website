@@ -70,7 +70,7 @@ export default function Navbar() {
               return (
                 <Link key={href} href={href}
                   className={cn(
-                    'relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200',
+                    'relative px-4 py-2 rounded-lg text-base font-semibold transition-all duration-200',
                     active
                       ? 'text-white'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'
