@@ -21,7 +21,7 @@ export default function Leaderboard() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([])
   const [sortBy, setSortBy] = useState('kills')
   const [loading, setLoading] = useState(true)
-  const [lastRefresh, setLastRefresh] = useState(new Date())
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
   const [error, setError] = useState(false)
 
   const fetchLeaderboard = useCallback(async () => {
@@ -166,7 +166,7 @@ export default function Leaderboard() {
 
       <div className="px-6 pb-4 pt-2" style={{ borderTop: '1px solid rgba(212,175,55,0.06)' }}>
         <p className="text-xs text-slate-600 text-center">
-          Updates every 15s · {lastRefresh.toLocaleTimeString()}
+          Updates every 15s · {lastRefresh ? lastRefresh.toLocaleTimeString() : '—'}
         </p>
       </div>
     </div>

@@ -97,7 +97,7 @@ export default function Navbar() {
               )}
             </Link>
 
-            {user ? (
+            {mounted && user ? (
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(o => !o)}
@@ -142,6 +142,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
+              mounted ? (
               <div className="hidden md:flex items-center gap-2">
                 <Link href="/login" className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
                   Sign In
@@ -150,6 +151,7 @@ export default function Navbar() {
                   Register
                 </Link>
               </div>
+              ) : null
             )}
 
             {/* Mobile menu button */}
@@ -170,7 +172,7 @@ export default function Navbar() {
                 {label}
               </Link>
             ))}
-            {!user && (
+            {mounted && !user && (
               <div className="flex gap-2 pt-2">
                 <Link href="/login" className="flex-1 text-center px-4 py-2 glass rounded-xl text-sm font-semibold text-slate-300">Sign In</Link>
                 <Link href="/register" className="flex-1 text-center px-4 py-2 btn-primary rounded-xl text-sm font-bold text-white">Register</Link>
