@@ -143,13 +143,12 @@ export default function ProductCard({ product, featured = false }: ProductCardPr
         {allImages.length > 0 ? (
           <div
             className="relative cursor-pointer group overflow-hidden"
-            style={{ height: '160px' }}
             onClick={() => openLightbox(0)}
           >
             <img
               src={allImages[0]}
               alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className="w-full object-contain transition-transform duration-500 group-hover:scale-105"
             />
             {/* Overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -213,7 +212,7 @@ export default function ProductCard({ product, featured = false }: ProductCardPr
               <div className="font-display font-bold text-xl text-hero-glow">
                 {formatCurrency(product.price)}
               </div>
-              <div className="text-xs text-slate-500">+18% GST</div>
+
             </div>
           </div>
 
