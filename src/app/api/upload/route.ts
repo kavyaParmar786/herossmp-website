@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { v4 as uuidv4 } from 'uuid'
-import { existsSync } from 'fs'
+import { v2 as cloudinary } from 'cloudinary'
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,27 +16,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 })
+    }
+
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    // In production, you should use Cloudinary, S3, or UploadThing.
-    // For local development and as a "working" polish, we'll save to public/uploads
-    
-    const uploadDir = join(process.cwd(), 'public', 'uploads')
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true })
-    }
+    // Upload to Cloudinary using upload_stream wrapped in a Promise
+    const url = await new Promise<string>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'herossmp',
+          resource_type: 'image',
+          // Auto-optimize format & quality for web
+          transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+        },
+        (error, result) => {
+          if (error || !result) return reject(error ?? new Error('Upload failed'))
+          resolve(result.secure_url)
+        }
+      )
+      uploadStream.end(buffer)
+    })
 
-    const filename = `${uuidv4()}-${file.name.replace(/\s+/g, '-')}`
-    const path = join(uploadDir, filename)
-    
-    await writeFile(path, buffer)
-    
-    const url = `/uploads/${filename}`
-    
     return NextResponse.json({ url })
   } catch (error) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: 'Failed to upload' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 })
   }
 }
