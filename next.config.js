@@ -10,8 +10,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'pbs.twimg.com' },
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
       { protocol: 'https', hostname: '**.githubusercontent.com' },
+      // Cloudinary — for uploaded images
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
-    // Allow unoptimized for external MC head images in <img> tags
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
