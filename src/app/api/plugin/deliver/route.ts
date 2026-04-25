@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     // Flatten to one delivery entry per item (plugin processes item-by-item)
     const deliveries = orders.flatMap((order) =>
       order.items.map((item) => ({
-        orderId: (order._id as string).toString(),
+        orderId: String(order._id),
         minecraftUsername: order.minecraftUsername,
         category: item.category || 'RANKS',
         productName: item.name,
