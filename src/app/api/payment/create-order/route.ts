@@ -6,7 +6,7 @@ import { requireAuth } from '@/lib/auth'
 import { calculateGST } from '@/lib/utils'
 
 function getRazorpay() {
-  const keyId = process.env.RAZORPAY_KEY_ID
+  const keyId     = process.env.RAZORPAY_KEY_ID
   const keySecret = process.env.RAZORPAY_KEY_SECRET
   if (!keyId || !keySecret) {
     throw new Error('Razorpay credentials are not configured in environment variables.')
@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const user = requireAuth(req)
     await connectDB()
 
-    const { items } = await req.json()
+    const { items, minecraftUsername } = await req.json()
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
@@ -32,36 +32,47 @@ export async function POST(req: NextRequest) {
     )
 
     const { gst, total } = calculateGST(totalAmount)
-    const amountInPaise = Math.round(total * 100)
+    const amountInPaise   = Math.round(total * 100)
 
-    const razorpay = getRazorpay()
+    const razorpay      = getRazorpay()
     const razorpayOrder = await razorpay.orders.create({
-      amount: amountInPaise,
+      amount:   amountInPaise,
       currency: 'INR',
-      receipt: `order_${Date.now()}`,
-      notes: { userId: user.userId, username: user.username },
+      receipt:  `order_${Date.now()}`,
+      notes:    { userId: user.userId, username: user.username },
     })
 
     const order = await Order.create({
-      userId: user.userId,
+      userId:   user.userId,
       username: user.username,
-      items: items.map((item: { productId: string; name: string; price: number; quantity: number }) => ({
+      minecraftUsername: minecraftUsername || '',
+      items: items.map((item: {
+        productId: string
+        name: string
+        price: number
+        quantity: number
+        category?: string
+        commands?: string[]
+      }) => ({
         productId: item.productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity || 1,
+        name:      item.name,
+        price:     item.price,
+        quantity:  item.quantity || 1,
+        category:  item.category || 'RANKS',
+        commands:  item.commands || [],
       })),
       totalAmount,
-      gstAmount: gst,
+      gstAmount:  gst,
       finalAmount: total,
       razorpayOrderId: razorpayOrder.id,
-      status: 'PENDING',
+      status:    'PENDING',
+      delivered: false,
     })
 
     return NextResponse.json({
-      orderId: razorpayOrder.id,
-      amount: amountInPaise,
-      currency: 'INR',
+      orderId:   razorpayOrder.id,
+      amount:    amountInPaise,
+      currency:  'INR',
       dbOrderId: order._id,
       breakdown: { subtotal: totalAmount, gst, total },
     })

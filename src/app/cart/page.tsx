@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/hooks/useCart'
 import { useAuth } from '@/hooks/useAuth'
 import { Button, Card } from '@/components/ui'
@@ -20,6 +20,9 @@ export default function CartPage() {
   const { user, token } = useAuth()
   const router = useRouter()
   const [paying, setPaying] = useState(false)
+  const [mcUsername, setMcUsername] = useState('')
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const { gst, total: finalTotal } = calculateGST(total)
 
@@ -58,7 +61,10 @@ export default function CartPage() {
             name: i.product.name,
             price: i.product.price,
             quantity: i.quantity,
+            category: i.product.category || 'RANKS',
+            commands: i.product.commands || [],
           })),
+          minecraftUsername: mcUsername.trim(),
         }),
       })
 
@@ -108,6 +114,10 @@ export default function CartPage() {
     } finally {
       setPaying(false)
     }
+  }
+
+  if (!mounted) {
+    return <div className="min-h-screen pt-32 flex items-center justify-center" />
   }
 
   if (items.length === 0) {
@@ -196,9 +206,28 @@ export default function CartPage() {
                 <span className="text-hero-glow">{formatCurrency(finalTotal)}</span>
               </div>
 
+              {/* Minecraft IGN — required for auto-delivery */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                  <span className="text-emerald-400">⚔</span>
+                  Minecraft Username (IGN)
+                  <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={mcUsername}
+                  onChange={e => setMcUsername(e.target.value)}
+                  placeholder="e.g. Notch"
+                  maxLength={32}
+                  className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-2.5 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/60 transition-colors"
+                />
+                <p className="text-xs text-slate-500">Your in-game name — items will be delivered here automatically.</p>
+              </div>
+
               <Button
                 onClick={handleCheckout}
                 loading={paying}
+                disabled={!mcUsername.trim()}
                 size="lg"
                 className="w-full"
               >

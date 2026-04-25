@@ -119,9 +119,12 @@ export default function Leaderboard() {
             </button>
           </div>
         ) : entries.length === 0 ? (
-          <div className="text-center py-10 text-slate-500 text-sm">
-            <Crown className="w-10 h-10 mx-auto mb-3 opacity-20 text-gold-mid" />
-            <p>No warriors yet — be the first!</p>
+          <div className="text-center py-12 text-slate-500 text-sm space-y-3">
+            <Crown className="w-12 h-12 mx-auto opacity-15 text-gold-mid" />
+            <p className="font-semibold text-slate-400">No stats yet</p>
+            <p className="text-xs text-slate-600 max-w-xs mx-auto">
+              The leaderboard fills up automatically once the HerosSMP plugin is connected to the server.
+            </p>
           </div>
         ) : entries.map((entry, index) => {
           const rank = RANK_STYLES[index]

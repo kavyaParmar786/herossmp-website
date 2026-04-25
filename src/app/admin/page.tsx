@@ -11,7 +11,8 @@ import AdminSettings from '@/components/admin/AdminSettings'
 import AdminFAQ from '@/components/admin/AdminFAQ'
 import AdminLeaderboard from '@/components/admin/AdminLeaderboard'
 import AdminApplications from '@/components/admin/AdminApplications'
-import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard, AlertTriangle, Trophy, ClipboardList } from 'lucide-react'
+import AdminBilling from '@/components/admin/AdminBilling'
+import { Package, Newspaper, Ticket, Users, Settings, HelpCircle, LayoutDashboard, AlertTriangle, Trophy, ClipboardList, Receipt } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -23,6 +24,7 @@ const TABS = [
   { key: 'users', label: 'Users', icon: Users },
   { key: 'leaderboard', label: 'Leaderboard', icon: Trophy },
   { key: 'faq', label: 'FAQ', icon: HelpCircle },
+  { key: 'billing', label: 'Billing', icon: Receipt },
   { key: 'settings', label: 'Settings', icon: Settings },
 ]
 
@@ -85,6 +87,7 @@ export default function AdminPage() {
     users: AdminUsers,
     leaderboard: AdminLeaderboard,
     faq: AdminFAQ,
+    billing: AdminBilling,
     settings: AdminSettings,
   }[tab] || AdminProducts
 
