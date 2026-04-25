@@ -23,11 +23,15 @@ export default function ApplyFormPage({ params }: { params: { slug: string } }) 
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/applications/forms?slug=${slug}`)
-      .then(r => r.json())
+    fetch(`/api/applications/forms?admin=false`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => {
-        setForm(d.form || null)
+        const found = (d.forms || []).find((f: ApplicationForm) => f.slug === slug)
+        // Ensure questions is always an array even if DB doc is malformed
+        if (found) found.questions = found.questions || []
+        setForm(found || null)
       })
+      .catch(() => setForm(null))
       .finally(() => setLoading(false))
   }, [slug])
 
@@ -36,7 +40,7 @@ export default function ApplyFormPage({ params }: { params: { slug: string } }) 
     if (!form) return
 
     // Validate
-    for (const q of (form.questions || [])) {
+    for (const q of form.questions) {
       if (q.required && !answers[q._id]?.trim()) {
         toast.error(`"${q.label}" is required`)
         return
@@ -47,7 +51,7 @@ export default function ApplyFormPage({ params }: { params: { slug: string } }) 
     try {
       const payload = {
         formId: form._id,
-        answers: (form.questions || []).map(q => ({
+        answers: form.questions.map(q => ({
           questionId: q._id,
           questionLabel: q.label,
           answer: answers[q._id] || '',
@@ -115,7 +119,7 @@ export default function ApplyFormPage({ params }: { params: { slug: string } }) 
         </div>
 
         <div className="space-y-5">
-          {(form.questions || []).map((q, i) => (
+          {form.questions.map((q, i) => (
             <Card key={q._id} className="animate-fade-in" style={{ animationDelay: `${i * 0.07}s` } as React.CSSProperties}>
               <div className="flex items-start gap-2 mb-3">
                 <span className="text-xs font-bold text-hero-glow bg-hero-purple/20 rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0 mt-0.5">{i + 1}</span>

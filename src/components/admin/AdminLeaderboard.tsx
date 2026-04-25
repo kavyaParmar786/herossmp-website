@@ -87,6 +87,24 @@ export default function AdminLeaderboard() {
     }
   }
 
+  const clearAll = async () => {
+    if (!window.confirm('Delete ALL leaderboard entries? This removes demo/fake data. Real data will be re-synced by the plugin automatically.')) return
+    try {
+      // Delete all entries one by one using existing delete endpoint
+      const names = entries.map(e => e.playerName)
+      for (const name of names) {
+        await fetch(`/api/leaderboard?playerName=${encodeURIComponent(name)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      }
+      setEntries([])
+      toast.success(`Cleared ${names.length} entries. Plugin will re-sync real data.`)
+    } catch {
+      toast.error('Failed to clear all entries')
+    }
+  }
+
   const deleteEntry = async (playerName: string) => {
     try {
       const res = await fetch(`/api/leaderboard?playerName=${encodeURIComponent(playerName)}`, {
@@ -148,6 +166,12 @@ export default function AdminLeaderboard() {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+          {entries.length > 0 && (
+            <Button variant="ghost" onClick={clearAll} className="text-red-400 hover:text-red-300 border-red-500/20 hover:border-red-400/40">
+              <Trash2 className="w-4 h-4" />
+              Clear Demo Data
+            </Button>
+          )}
           <Button onClick={() => setShowAddForm(true)}>
             <Plus className="w-4 h-4" />
             Add Player
