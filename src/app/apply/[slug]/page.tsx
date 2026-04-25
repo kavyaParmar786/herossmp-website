@@ -23,11 +23,10 @@ export default function ApplyFormPage({ params }: { params: { slug: string } }) 
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/applications/forms?admin=false`)
+    fetch(`/api/applications/forms?slug=${slug}`)
       .then(r => r.json())
       .then(d => {
-        const found = (d.forms || []).find((f: ApplicationForm) => f.slug === slug)
-        setForm(found || null)
+        setForm(d.form || null)
       })
       .finally(() => setLoading(false))
   }, [slug])
