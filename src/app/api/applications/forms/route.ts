@@ -16,7 +16,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ forms })
     }
 
-    // Public: only open forms
+    // Public: fetch a single form by slug (includes questions)
+    const slug = searchParams.get('slug')
+    if (slug) {
+      const form = await ApplicationForm.findOne({ slug, isOpen: true })
+      if (!form) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return NextResponse.json({ form })
+    }
+
+    // Public: only open forms (list view, no questions)
     const forms = await ApplicationForm.find({ isOpen: true }).select('-questions').sort({ createdAt: -1 })
     return NextResponse.json({ forms })
   } catch (error: unknown) {
