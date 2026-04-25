@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 
 export const revalidate = 30
 
-interface MCPlayer { name: string; id?: string }
+interface MCPlayer { name: string; name_clean?: string; id?: string }
 
 async function tryMcsrvstat(ip: string) {
   // v3 API — most reliable for online/count
