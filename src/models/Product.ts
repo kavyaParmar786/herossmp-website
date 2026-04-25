@@ -10,6 +10,7 @@ export interface IProduct extends Document {
   images?: string[]   // multiple images
   popular?: boolean
   color?: string
+  commands?: string[]   // per-product delivery commands, overrides config.yml defaults
   active: boolean
   createdAt: Date
 }
@@ -29,6 +30,7 @@ const ProductSchema = new Schema<IProduct>(
     images: [{ type: String }],
     popular: { type: Boolean, default: false },
     color: { type: String, default: '#8b5cf6' },
+    commands: [{ type: String }],
     active: { type: Boolean, default: true },
   },
   { timestamps: true }

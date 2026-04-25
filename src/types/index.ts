@@ -19,6 +19,7 @@ export interface Product {
   images?: string[]
   popular?: boolean
   color?: string
+  commands?: string[]   // delivery commands for this product
   createdAt: string
 }
 
