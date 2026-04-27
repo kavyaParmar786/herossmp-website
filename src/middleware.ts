@@ -27,5 +27,17 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/tickets/:path*', '/cart/:path*', '/admin/:path*', '/login', '/register'],
+  // ⚠️ IMPORTANT: Do NOT include /api/* paths here.
+  // API routes handle auth via Bearer token in headers — not cookies.
+  // If /api/admin/* is matched here, PUT/POST requests get redirected to /login
+  // (a GET-only page), which causes "405 Method Not Allowed" on Vercel.
+  matcher: [
+    '/dashboard/:path*',
+    '/tickets/:path*',
+    '/cart/:path*',
+    '/admin',
+    '/admin/((?!_next|api).+)', // /admin pages only, NOT /api/admin/*
+    '/login',
+    '/register',
+  ],
 }
