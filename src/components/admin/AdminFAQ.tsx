@@ -3,10 +3,9 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { FAQ } from '@/types'
 import { useAuth } from '@/hooks/useAuth'
 import { Button, Input, Card } from '@/components/ui'
-import { Plus, Pencil, Trash2, X, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, Type } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Bold, Italic, Underline, Strikethrough, AlignLeft, AlignCenter, AlignRight, List, ListOrdered } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-// ── Emoji list ────────────────────────────────────────────────────────────────
 const EMOJIS = [
   '⚔️','🛡️','🏆','💎','🔥','⚡','🌟','✨','💫','🎯','🎮','🗡️','🏹','🪄',
   '👑','💀','🐉','🦁','🐺','🦅','🌙','☀️','❄️','🌊','💥','🎉','🎊','🎁',
@@ -14,7 +13,6 @@ const EMOJIS = [
   '✅','❌','⚠️','ℹ️','📌','📣','🔔','💬','🤝','👋','💪','🙏','👍','❤️',
 ]
 
-// ── Color palette ─────────────────────────────────────────────────────────────
 const COLORS = [
   '#ffffff','#e2e8f0','#94a3b8','#64748b',
   '#f87171','#fb923c','#fbbf24','#a3e635',
@@ -25,126 +23,249 @@ const COLORS = [
 
 const FONT_SIZES = ['12','14','16','18','20','24','28','32','36','48','64']
 const FONT_FAMILIES = [
-  { label: 'Default', value: 'inherit' },
+  { label: 'Default', value: '' },
   { label: 'Orbitron', value: 'Orbitron, sans-serif' },
   { label: 'Cinzel', value: 'Cinzel, serif' },
   { label: 'Mono', value: 'monospace' },
   { label: 'Serif', value: 'Georgia, serif' },
 ]
 
+// ── Save / restore selection ───────────────────────────────────────────────────
+function saveSelection(): Range | null {
+  const sel = window.getSelection()
+  if (sel && sel.rangeCount > 0) return sel.getRangeAt(0).cloneRange()
+  return null
+}
+function restoreSelection(range: Range | null) {
+  if (!range) return
+  const sel = window.getSelection()
+  if (!sel) return
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
+// ── Safe span wrapper — handles multi-node selections without crashing ─────────
+function wrapSelectionWithSpan(style: Record<string, string>, savedRange: Range | null) {
+  if (!savedRange) return
+  restoreSelection(savedRange)
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed) return
+
+  const range = sel.getRangeAt(0)
+  // extractContents handles partial/multi-node selections safely
+  const fragment = range.extractContents()
+  const span = document.createElement('span')
+  Object.entries(style).forEach(([k, v]) => {
+    (span.style as unknown as Record<string, string>)[k] = v
+  })
+  span.appendChild(fragment)
+  range.insertNode(span)
+  // Place cursor after span
+  const after = document.createRange()
+  after.setStartAfter(span)
+  after.collapse(true)
+  sel.removeAllRanges()
+  sel.addRange(after)
+}
+
 // ── Toolbar Button ─────────────────────────────────────────────────────────────
-function ToolBtn({ onClick, title, active, children }: { onClick: () => void; title: string; active?: boolean; children: React.ReactNode }) {
+function ToolBtn({
+  onMouseDown, title, children,
+}: {
+  onMouseDown: (e: React.MouseEvent) => void
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <button
       type="button"
-      onMouseDown={(e) => { e.preventDefault(); onClick() }}
+      onMouseDown={onMouseDown}
       title={title}
-      className={`p-1.5 rounded transition-all text-xs font-medium select-none ${
-        active ? 'bg-hero-violet text-white' : 'text-slate-300 hover:bg-white/10 hover:text-white'
-      }`}
+      className="p-1.5 rounded text-slate-300 hover:bg-white/10 hover:text-white transition-all text-xs font-medium select-none"
     >
       {children}
     </button>
   )
 }
 
+// ── Color Palette Dropdown ─────────────────────────────────────────────────────
+function ColorPalette({
+  label, onPick,
+}: {
+  label: string
+  onPick: (color: string) => void
+}) {
+  return (
+    <div className="bg-[#1a1a2e] border border-white/20 rounded-xl p-3 shadow-2xl w-56 absolute top-full left-0 mt-1 z-[9999]">
+      <p className="text-xs text-slate-400 mb-2 font-medium">{label}</p>
+      <div className="grid grid-cols-10 gap-1 mb-2">
+        {COLORS.map(c => (
+          <button
+            key={c}
+            type="button"
+            onMouseDown={(e) => { e.preventDefault(); onPick(c) }}
+            className="w-4 h-4 rounded-full border border-white/20 hover:scale-125 transition-transform"
+            style={{ backgroundColor: c }}
+            title={c}
+          />
+        ))}
+      </div>
+      <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+        <label className="text-xs text-slate-400">Custom:</label>
+        <input
+          type="color"
+          className="w-8 h-6 cursor-pointer bg-transparent border-0"
+          onInput={(e) => onPick((e.target as HTMLInputElement).value)}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Rich Text Editor ───────────────────────────────────────────────────────────
 function RichEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null)
+  const savedRangeRef = useRef<Range | null>(null)
   const [showEmojis, setShowEmojis] = useState(false)
   const [showColors, setShowColors] = useState<'text' | 'bg' | null>(null)
-  const [activeColor, setActiveColor] = useState('#ffffff')
-  const [fontSize, setFontSize] = useState('16')
-  const [fontFamily, setFontFamily] = useState('inherit')
+  const initialized = useRef(false)
 
-  // Init content once
+  // Set initial HTML once
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
+    if (!initialized.current && editorRef.current) {
       editorRef.current.innerHTML = value || ''
+      initialized.current = true
     }
-  }, []) // eslint-disable-line
+  }, [value])
 
-  const exec = useCallback((cmd: string, val?: string) => {
-    editorRef.current?.focus()
-    document.execCommand(cmd, false, val)
+  const emit = useCallback(() => {
     onChange(editorRef.current?.innerHTML || '')
   }, [onChange])
 
-  const applyFontSize = (size: string) => {
-    setFontSize(size)
-    editorRef.current?.focus()
-    const sel = window.getSelection()
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      const range = sel.getRangeAt(0)
-      const span = document.createElement('span')
-      span.style.fontSize = size + 'px'
-      range.surroundContents(span)
-      onChange(editorRef.current?.innerHTML || '')
-    }
+  const snapshotSelection = () => {
+    const r = saveSelection()
+    if (r) savedRangeRef.current = r
   }
 
-  const applyFont = (font: string) => {
-    setFontFamily(font)
+  // execCommand for simple formatting
+  const exec = (cmd: string, val?: string) => {
     editorRef.current?.focus()
+    document.execCommand(cmd, false, val ?? undefined)
+    emit()
+  }
+
+  // Font size — use execCommand fontSize hack to avoid surroundContents crash
+  const applyFontSize = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const px = e.target.value
+    restoreSelection(savedRangeRef.current)
     const sel = window.getSelection()
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
-      const range = sel.getRangeAt(0)
+    if (!sel || sel.isCollapsed) return
+    // Use execCommand fontSize=7 as a marker, then replace with actual px span
+    document.execCommand('fontSize', false, '7')
+    editorRef.current?.querySelectorAll('font[size="7"]').forEach((el) => {
+      const span = document.createElement('span')
+      span.style.fontSize = px + 'px'
+      el.parentNode?.insertBefore(span, el)
+      while (el.firstChild) span.appendChild(el.firstChild)
+      el.parentNode?.removeChild(el)
+    })
+    emit()
+  }
+
+  // Font family — same marker trick
+  const applyFont = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const font = e.target.value
+    if (!font) return
+    restoreSelection(savedRangeRef.current)
+    const sel = window.getSelection()
+    if (!sel || sel.isCollapsed) return
+    document.execCommand('fontSize', false, '7')
+    editorRef.current?.querySelectorAll('font[size="7"]').forEach((el) => {
       const span = document.createElement('span')
       span.style.fontFamily = font
-      range.surroundContents(span)
-      onChange(editorRef.current?.innerHTML || '')
-    }
+      el.parentNode?.insertBefore(span, el)
+      while (el.firstChild) span.appendChild(el.firstChild)
+      el.parentNode?.removeChild(el)
+    })
+    emit()
   }
 
   const applyTextColor = (color: string) => {
-    exec('foreColor', color)
-    setActiveColor(color)
+    restoreSelection(savedRangeRef.current)
+    editorRef.current?.focus()
+    document.execCommand('foreColor', false, color)
+    emit()
     setShowColors(null)
   }
 
   const applyBgColor = (color: string) => {
-    exec('hiliteColor', color)
+    restoreSelection(savedRangeRef.current)
+    editorRef.current?.focus()
+    document.execCommand('hiliteColor', false, color)
+    emit()
     setShowColors(null)
   }
 
   const insertEmoji = (emoji: string) => {
+    restoreSelection(savedRangeRef.current)
     editorRef.current?.focus()
     document.execCommand('insertText', false, emoji)
-    onChange(editorRef.current?.innerHTML || '')
+    emit()
     setShowEmojis(false)
   }
 
-  const insertLink = () => {
+  const insertLink = (e: React.MouseEvent) => {
+    e.preventDefault()
+    snapshotSelection()
     const url = prompt('Enter URL:')
-    if (url) exec('createLink', url)
+    if (!url) return
+    restoreSelection(savedRangeRef.current)
+    editorRef.current?.focus()
+    document.execCommand('createLink', false, url)
+    emit()
+  }
+
+  const openColorPanel = (type: 'text' | 'bg', e: React.MouseEvent) => {
+    e.preventDefault()
+    snapshotSelection() // snapshot BEFORE dropdown opens (focus is still in editor)
+    setShowColors(showColors === type ? null : type)
+    setShowEmojis(false)
+  }
+
+  const openEmojiPanel = (e: React.MouseEvent) => {
+    e.preventDefault()
+    snapshotSelection()
+    setShowEmojis(!showEmojis)
+    setShowColors(null)
   }
 
   return (
-    <div className="rounded-xl border border-white/10 overflow-hidden bg-black/30">
+    <div className="rounded-xl border border-white/10 overflow-visible bg-black/30">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-0.5 px-2 py-2 border-b border-white/10 bg-black/20">
-        {/* Text style */}
-        <ToolBtn onClick={() => exec('bold')} title="Bold"><Bold className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('italic')} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('underline')} title="Underline"><Underline className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('strikeThrough')} title="Strikethrough"><Strikethrough className="w-3.5 h-3.5" /></ToolBtn>
+      <div
+        className="flex flex-wrap items-center gap-0.5 px-2 py-2 border-b border-white/10 bg-black/20 rounded-t-xl"
+      >
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('bold') }} title="Bold"><Bold className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('italic') }} title="Italic"><Italic className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('underline') }} title="Underline"><Underline className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('strikeThrough') }} title="Strikethrough"><Strikethrough className="w-3.5 h-3.5" /></ToolBtn>
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Font size */}
         <select
-          value={fontSize}
-          onChange={(e) => applyFontSize(e.target.value)}
+          onChange={applyFontSize}
+          onMouseDown={snapshotSelection}
+          defaultValue="16"
           className="bg-black/40 border border-white/10 text-slate-300 text-xs rounded px-1.5 py-1 outline-none focus:border-hero-violet cursor-pointer"
           title="Font Size"
         >
           {FONT_SIZES.map(s => <option key={s} value={s}>{s}px</option>)}
         </select>
 
-        {/* Font family */}
         <select
-          value={fontFamily}
-          onChange={(e) => applyFont(e.target.value)}
+          onChange={applyFont}
+          onMouseDown={snapshotSelection}
+          defaultValue=""
           className="bg-black/40 border border-white/10 text-slate-300 text-xs rounded px-1.5 py-1 outline-none focus:border-hero-violet cursor-pointer"
           title="Font Family"
         >
@@ -153,125 +274,75 @@ function RichEditor({ value, onChange }: { value: string; onChange: (html: strin
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Alignment */}
-        <ToolBtn onClick={() => exec('justifyLeft')} title="Align Left"><AlignLeft className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('justifyCenter')} title="Align Center"><AlignCenter className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('justifyRight')} title="Align Right"><AlignRight className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('justifyLeft') }} title="Left"><AlignLeft className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('justifyCenter') }} title="Center"><AlignCenter className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('justifyRight') }} title="Right"><AlignRight className="w-3.5 h-3.5" /></ToolBtn>
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Lists */}
-        <ToolBtn onClick={() => exec('insertUnorderedList')} title="Bullet List"><List className="w-3.5 h-3.5" /></ToolBtn>
-        <ToolBtn onClick={() => exec('insertOrderedList')} title="Numbered List"><Type className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('insertUnorderedList') }} title="Bullet List"><List className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('insertOrderedList') }} title="Numbered List"><ListOrdered className="w-3.5 h-3.5" /></ToolBtn>
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Text Color */}
+        {/* Text color */}
         <div className="relative">
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); setShowColors(showColors === 'text' ? null : 'text'); setShowEmojis(false) }}
+            onMouseDown={(e) => openColorPanel('text', e)}
             title="Text Color"
             className="p-1.5 rounded hover:bg-white/10 transition-all flex flex-col items-center gap-0.5"
           >
             <span className="text-xs font-bold text-white leading-none">A</span>
-            <span className="w-4 h-1 rounded-full" style={{ backgroundColor: activeColor }} />
+            <span className="w-4 h-1 rounded-full bg-white" />
           </button>
           {showColors === 'text' && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1a2e] border border-white/20 rounded-xl p-3 shadow-2xl w-52">
-              <p className="text-xs text-slate-400 mb-2 font-medium">Text Color</p>
-              <div className="grid grid-cols-10 gap-1">
-                {COLORS.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onMouseDown={(e) => { e.preventDefault(); applyTextColor(c) }}
-                    className="w-4 h-4 rounded-full border border-white/20 hover:scale-125 transition-transform"
-                    style={{ backgroundColor: c }}
-                    title={c}
-                  />
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <label className="text-xs text-slate-400">Custom:</label>
-                <input
-                  type="color"
-                  className="w-8 h-6 rounded cursor-pointer border-0 bg-transparent"
-                  onInput={(e) => applyTextColor((e.target as HTMLInputElement).value)}
-                />
-              </div>
-            </div>
+            <ColorPalette label="Text Color" onPick={applyTextColor} />
           )}
         </div>
 
-        {/* BG/Highlight Color */}
+        {/* Highlight */}
         <div className="relative">
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); setShowColors(showColors === 'bg' ? null : 'bg'); setShowEmojis(false) }}
+            onMouseDown={(e) => openColorPanel('bg', e)}
             title="Highlight Color"
             className="p-1.5 rounded hover:bg-white/10 transition-all flex flex-col items-center gap-0.5"
           >
-            <span className="text-xs font-bold leading-none" style={{ color: '#ffd700', textShadow: '0 0 6px #ffd70080' }}>H</span>
+            <span className="text-xs font-bold leading-none" style={{ color: '#ffd700' }}>H</span>
             <span className="w-4 h-1 rounded-full bg-yellow-400/70" />
           </button>
           {showColors === 'bg' && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1a2e] border border-white/20 rounded-xl p-3 shadow-2xl w-52">
-              <p className="text-xs text-slate-400 mb-2 font-medium">Highlight Color</p>
-              <div className="grid grid-cols-10 gap-1">
-                {COLORS.map(c => (
-                  <button
-                    key={c}
-                    type="button"
-                    onMouseDown={(e) => { e.preventDefault(); applyBgColor(c) }}
-                    className="w-4 h-4 rounded-full border border-white/20 hover:scale-125 transition-transform"
-                    style={{ backgroundColor: c }}
-                    title={c}
-                  />
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <label className="text-xs text-slate-400">Custom:</label>
-                <input
-                  type="color"
-                  className="w-8 h-6 rounded cursor-pointer border-0 bg-transparent"
-                  onInput={(e) => applyBgColor((e.target as HTMLInputElement).value)}
-                />
-              </div>
-            </div>
+            <ColorPalette label="Highlight Color" onPick={applyBgColor} />
           )}
         </div>
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Link */}
-        <ToolBtn onClick={insertLink} title="Insert Link">
-          <span className="text-xs">🔗</span>
-        </ToolBtn>
+        <ToolBtn onMouseDown={insertLink} title="Insert Link"><span className="text-sm">🔗</span></ToolBtn>
 
-        {/* Emoji picker */}
+        {/* Emoji */}
         <div className="relative">
           <button
             type="button"
-            onMouseDown={(e) => { e.preventDefault(); setShowEmojis(!showEmojis); setShowColors(null) }}
+            onMouseDown={openEmojiPanel}
             title="Insert Emoji"
             className="p-1.5 rounded hover:bg-white/10 transition-all text-base leading-none"
           >
             😀
           </button>
           {showEmojis && (
-            <div className="absolute top-full left-0 mt-1 z-50 bg-[#1a1a2e] border border-white/20 rounded-xl p-3 shadow-2xl w-72">
+            <div className="absolute top-full left-0 mt-1 z-[9999] bg-[#1a1a2e] border border-white/20 rounded-xl p-3 shadow-2xl w-72">
               <p className="text-xs text-slate-400 mb-2 font-medium">Emojis</p>
               <div className="grid grid-cols-10 gap-1">
-                {EMOJIS.map(e => (
+                {EMOJIS.map(em => (
                   <button
-                    key={e}
+                    key={em}
                     type="button"
-                    onMouseDown={(ev) => { ev.preventDefault(); insertEmoji(e) }}
+                    onMouseDown={(e) => { e.preventDefault(); insertEmoji(em) }}
                     className="text-lg hover:scale-125 transition-transform hover:bg-white/10 rounded p-0.5"
-                    title={e}
                   >
-                    {e}
+                    {em}
                   </button>
                 ))}
               </div>
@@ -281,45 +352,46 @@ function RichEditor({ value, onChange }: { value: string; onChange: (html: strin
 
         <div className="w-px h-5 bg-white/10 mx-1" />
 
-        {/* Clear formatting */}
-        <ToolBtn onClick={() => exec('removeFormat')} title="Clear Formatting">
-          <span className="text-xs">✕ fmt</span>
+        <ToolBtn onMouseDown={(e) => { e.preventDefault(); exec('removeFormat') }} title="Clear Formatting">
+          <span className="text-xs">✕fmt</span>
         </ToolBtn>
       </div>
 
-      {/* Editable area */}
+      {/* Editable */}
       <div
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
-        onInput={() => onChange(editorRef.current?.innerHTML || '')}
+        onInput={emit}
+        onKeyUp={snapshotSelection}
+        onMouseUp={snapshotSelection}
         onClick={() => { setShowColors(null); setShowEmojis(false) }}
-        className="min-h-[120px] max-h-[300px] overflow-y-auto p-4 text-slate-200 text-sm leading-relaxed outline-none focus:ring-1 focus:ring-hero-violet/50"
-        style={{ wordBreak: 'break-word' }}
-        data-placeholder="Write the FAQ answer... select text to style it"
+        className="min-h-[140px] max-h-[320px] overflow-y-auto p-4 text-slate-200 text-sm leading-relaxed outline-none"
+        style={{ wordBreak: 'break-word', caretColor: '#818cf8' }}
+        data-placeholder="Write your FAQ answer here... Select text then apply styles from the toolbar."
       />
 
-      {/* Bottom hint */}
-      <div className="px-4 py-2 border-t border-white/5 bg-black/10 flex items-center justify-between">
-        <span className="text-xs text-slate-600">Select text then apply styles from the toolbar above</span>
-        <span className="text-xs text-slate-600">Supports HTML formatting</span>
+      <div className="px-4 py-2 border-t border-white/5 bg-black/10 rounded-b-xl">
+        <span className="text-xs text-slate-600">💡 Select text first, then click color / size / style</span>
       </div>
 
       <style>{`
         [contenteditable]:empty:before {
           content: attr(data-placeholder);
-          color: #475569;
+          color: #334155;
           pointer-events: none;
+          display: block;
         }
         [contenteditable] a { color: #818cf8; text-decoration: underline; }
-        [contenteditable] ul { list-style: disc; padding-left: 1.5em; }
-        [contenteditable] ol { list-style: decimal; padding-left: 1.5em; }
+        [contenteditable] ul { list-style: disc; padding-left: 1.5em; margin: 0.4em 0; }
+        [contenteditable] ol { list-style: decimal; padding-left: 1.5em; margin: 0.4em 0; }
+        [contenteditable] li { margin: 0.2em 0; }
       `}</style>
     </div>
   )
 }
 
-// ── Main AdminFAQ Component ───────────────────────────────────────────────────
+// ── Main AdminFAQ ──────────────────────────────────────────────────────────────
 export default function AdminFAQ() {
   const { token } = useAuth()
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -379,8 +451,12 @@ export default function AdminFAQ() {
       {editing && (
         <Card className="mb-8 border-hero-violet/30">
           <div className="flex justify-between items-center mb-5">
-            <h3 className="font-bold text-lg text-white">{'_id' in editing && editing._id ? 'Edit FAQ' : 'New FAQ'}</h3>
-            <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+            <h3 className="font-bold text-lg text-white">
+              {'_id' in editing && editing._id ? 'Edit FAQ' : 'New FAQ'}
+            </h3>
+            <button onClick={() => setEditing(null)} className="text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="space-y-4">
             <Input
@@ -388,17 +464,15 @@ export default function AdminFAQ() {
               value={editing.question || ''}
               onChange={(e) => setEditing({ ...editing, question: e.target.value })}
             />
-
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Answer <span className="text-xs text-hero-violet ml-1">(rich text — colors, emojis, bold, size, etc.)</span>
+                Answer <span className="text-xs text-hero-violet ml-1">(rich text — colors, emojis, bold, size &amp; more)</span>
               </label>
               <RichEditor
                 value={editing.answer || ''}
-                onChange={(html) => setEditing({ ...editing, answer: html })}
+                onChange={(html) => setEditing((prev) => prev ? { ...prev, answer: html } : prev)}
               />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Category"
@@ -425,8 +499,8 @@ export default function AdminFAQ() {
           <Card key={faq._id} className="flex items-start gap-4">
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white">{faq.question}</p>
-              {/* Preview strips HTML tags for admin list view */}
-              <p className="text-sm text-slate-400 mt-1 line-clamp-2"
+              <div
+                className="text-sm text-slate-400 mt-1 line-clamp-2"
                 dangerouslySetInnerHTML={{ __html: faq.answer }}
               />
               <span className="text-xs text-hero-glow mt-1 inline-block">{faq.category}</span>
