@@ -73,8 +73,9 @@ export default function FAQPage() {
                         />
                       </button>
                       {openId === faq._id && (
-                        <div className="px-5 pb-5 text-slate-400 text-sm leading-relaxed border-t border-white/5 pt-4">
-                          {faq.answer}
+                        <div className="px-5 pb-5 text-sm leading-relaxed border-t border-white/5 pt-4 faq-rich-content">
+                          {/* Renders rich HTML saved from the editor */}
+                          <div dangerouslySetInnerHTML={{ __html: faq.answer }} />
                         </div>
                       )}
                     </div>
@@ -85,6 +86,21 @@ export default function FAQPage() {
           </div>
         )}
       </div>
+
+      {/* Styles to make rich HTML look good in FAQ answers */}
+      <style>{`
+        .faq-rich-content { color: #94a3b8; }
+        .faq-rich-content b, .faq-rich-content strong { color: #e2e8f0; font-weight: 700; }
+        .faq-rich-content i, .faq-rich-content em { font-style: italic; }
+        .faq-rich-content u { text-decoration: underline; }
+        .faq-rich-content s { text-decoration: line-through; }
+        .faq-rich-content a { color: #818cf8; text-decoration: underline; }
+        .faq-rich-content a:hover { color: #a5b4fc; }
+        .faq-rich-content ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+        .faq-rich-content ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+        .faq-rich-content li { margin: 0.25em 0; }
+        .faq-rich-content span { line-height: 1.6; }
+      `}</style>
     </div>
   )
 }
