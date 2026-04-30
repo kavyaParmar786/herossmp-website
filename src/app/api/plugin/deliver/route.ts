@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
         category: item.category || 'RANKS',
         productName: item.name,
         commands: item.commands || [],
-        quantity: item.quantity,
+        amount: item.quantity,
         purchasedAt: order.createdAt,
       }))
     )
