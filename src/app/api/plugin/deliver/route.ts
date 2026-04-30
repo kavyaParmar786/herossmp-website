@@ -45,9 +45,16 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
-
-// PATCH — plugin calls this once all items in an order are delivered
+// PATCH
 export async function PATCH(req: NextRequest) {
+  return handleDelivery(req)
+}
+
+export async function POST(req: NextRequest) {
+  return handleDelivery(req)
+}
+
+async function handleDelivery(req: NextRequest) {
   if (!verifyPluginKey(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -55,9 +62,6 @@ export async function PATCH(req: NextRequest) {
   try {
     await connectDB()
     const { orderId } = await req.json()
-    if (!orderId) {
-      return NextResponse.json({ error: 'orderId required' }, { status: 400 })
-    }
 
     const order = await Order.findByIdAndUpdate(
       orderId,
@@ -65,13 +69,8 @@ export async function PATCH(req: NextRequest) {
       { new: true }
     )
 
-    if (!order) {
-      return NextResponse.json({ error: 'Order not found' }, { status: 404 })
-    }
-
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[plugin/deliver] PATCH error:', error)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
