@@ -1,7 +1,10 @@
+// src/app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
 import Order from '@/models/Order'
 import { requireRole } from '@/lib/auth'
+
+export const dynamic = 'force-dynamic'  // ← fix: prevents static rendering error
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,11 +12,11 @@ export async function GET(req: NextRequest) {
     await connectDB()
 
     const { searchParams } = new URL(req.url)
-    const page     = Math.max(1, parseInt(searchParams.get('page')  || '1'))
-    const limit    = Math.min(50, parseInt(searchParams.get('limit') || '20'))
-    const status   = searchParams.get('status')   // PENDING | COMPLETED | FAILED
-    const search   = searchParams.get('search')   // username or MC name
-    const delivered = searchParams.get('delivered') // 'true' | 'false'
+    const page      = Math.max(1, parseInt(searchParams.get('page')  || '1'))
+    const limit     = Math.min(50, parseInt(searchParams.get('limit') || '20'))
+    const status    = searchParams.get('status')
+    const search    = searchParams.get('search')
+    const delivered = searchParams.get('delivered')
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const filter: Record<string, any> = {}
