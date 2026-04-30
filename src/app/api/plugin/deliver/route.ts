@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const revalidate = 0
 
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/db'
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
           category: item.category || 'RANKS',
           productName: item.name,
           commands: item.commands || [],
-          amount: item.quantity,
+          amount: parseInt(item.name) || item.quantity,
           purchasedAt: order.createdAt,
         }))
     )
