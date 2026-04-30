@@ -1,163 +1,130 @@
-// src/app/api/plugin/deliver/route.ts
+// src/app/api/payment/create-order/route.ts
 /**
- * Plugin delivery API
+ * Create Razorpay order + persist DB order.
  *
- * GET  /api/plugin/deliver
- *   → Returns only UNDELIVERED items across all COMPLETED orders.
- *   → Each delivery object carries both orderId + itemId so the plugin
- *     can mark them individually.
- *
- * POST /api/plugin/deliver
- *   → Marks a single item as delivered (idempotent – safe to retry).
- *   → When every item in the order is delivered, also marks order.delivered=true.
- *
- * Why POST instead of PATCH?
- *   Vercel Edge / serverless sometimes drops PATCH bodies; POST is always safe.
- *   The plugin should use POST.  A PATCH alias is kept for backward-compat.
+ * KEY FIX: quantity is taken directly from the cart item sent by the frontend.
+ * The frontend must pass the correct numeric quantity (e.g. 1000 for
+ * "1000 Claim Blocks") — never parse it out of the product name string.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import Razorpay from 'razorpay'
 import connectDB from '@/lib/db'
 import Order from '@/models/Order'
+import { requireAuth } from '@/lib/auth'
+import { calculateGST } from '@/lib/utils'
 
-// Force dynamic so Vercel never caches this route
 export const dynamic = 'force-dynamic'
 
-// ─── Auth helper ─────────────────────────────────────────────────────────────
-function verifyPluginKey(req: NextRequest): boolean {
-  const key = req.headers.get('x-plugin-key')
-  return !!(key && key === process.env.PLUGIN_API_KEY)
+function getRazorpay() {
+  const keyId     = process.env.RAZORPAY_KEY_ID
+  const keySecret = process.env.RAZORPAY_KEY_SECRET
+  if (!keyId || !keySecret) {
+    throw new Error('Razorpay credentials are not configured.')
+  }
+  return new Razorpay({ key_id: keyId, key_secret: keySecret })
 }
 
-// ─── GET — poll for pending deliveries ───────────────────────────────────────
-export async function GET(req: NextRequest) {
-  if (!verifyPluginKey(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  try {
-    await connectDB()
-
-    /**
-     * Find orders that:
-     *  1. Payment is COMPLETED
-     *  2. Order-level delivered flag is false  (at least one item still pending)
-     *  3. Have a minecraftUsername set
-     *
-     * We project only what the plugin needs.
-     */
-    const orders = await Order.find({
-      status:            'COMPLETED',
-      delivered:         false,
-      minecraftUsername: { $exists: true, $ne: '' },
-    })
-      .sort({ createdAt: 1 })  // oldest first → FIFO
-      .limit(50)
-      .lean()
-
-    /**
-     * Flatten to ONE entry per UNDELIVERED item.
-     * The plugin receives itemId so it can POST back to mark exactly that item.
-     */
-    const deliveries = orders.flatMap((order) =>
-      order.items
-        .filter((item) => !item.delivered)          // ← only undelivered items
-        .map((item) => ({
-          orderId:          String(order._id),
-          itemId:           String(item._id),        // per-item reference
-          minecraftUsername: order.minecraftUsername,
-          category:         item.category ?? 'RANKS',
-          productName:      item.name,
-          commands:         item.commands ?? [],
-          quantity:         item.quantity,           // actual quantity, e.g. 1000
-          purchasedAt:      order.createdAt,
-        }))
-    )
-
-    return NextResponse.json({ deliveries })
-  } catch (error) {
-    console.error('[plugin/deliver] GET error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
-  }
+// ─── Cart item shape the frontend must send ──────────────────────────────────
+interface CartItem {
+  productId: string
+  name:      string
+  price:     number   // unit price in INR
+  /**
+   * quantity = the actual deliverable amount.
+   * For "1000 Claim Blocks" this should be 1000.
+   * For a rank ("VIP") this is 1.
+   * The frontend/product catalogue is the source of truth — never parse name.
+   */
+  quantity:  number
+  category:  string   // RANKS | CLAIM_BLOCKS | KITS | …
+  commands:  string[] // e.g. ["/givecb {player} 1000"]
 }
 
-// ─── Core mark-delivered logic (shared by POST + PATCH) ──────────────────────
-async function markItemDelivered(req: NextRequest) {
-  if (!verifyPluginKey(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
+export async function POST(req: NextRequest) {
   try {
+    const user = requireAuth(req)
     await connectDB()
 
-    const body = await req.json()
-    const { orderId, itemId } = body as { orderId?: string; itemId?: string }
+    const { items, minecraftUsername } = (await req.json()) as {
+      items:             CartItem[]
+      minecraftUsername: string
+    }
 
-    if (!orderId || !itemId) {
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
+    }
+
+    if (!minecraftUsername?.trim()) {
       return NextResponse.json(
-        { error: 'Both orderId and itemId are required' },
+        { error: 'Minecraft username is required' },
         { status: 400 }
       )
     }
 
-    /**
-     * Atomically update the specific item's delivered flag.
-     *
-     * Using positional operator $ + arrayFilters to target the exact sub-doc.
-     * This is idempotent: running it twice has no side-effect beyond the first.
-     */
-    const result = await Order.findOneAndUpdate(
-      {
-        _id:         orderId,
-        'items._id': itemId,           // ensure the item belongs to this order
-      },
-      {
-        $set: {
-          'items.$[item].delivered':   true,
-          'items.$[item].deliveredAt': new Date(),
-        },
-      },
-      {
-        arrayFilters: [{ 'item._id': itemId }],
-        new: true,
+    // Validate items have required fields
+    for (const item of items) {
+      if (!item.productId || !item.name || item.price == null || !item.quantity) {
+        return NextResponse.json(
+          { error: `Invalid item: ${item.name ?? 'unknown'}` },
+          { status: 400 }
+        )
       }
+    }
+
+    const totalAmount = items.reduce(
+      (sum, item) => sum + item.price * (item.quantity > 0 ? 1 : 1), // price is per-purchase, quantity is deliverable amount
+      0
     )
+    // NOTE: totalAmount = sum of unit prices (you charge once per product,
+    // regardless of deliverable quantity like claim blocks).
+    // Adjust the line above if your pricing model is different.
 
-    if (!result) {
-      return NextResponse.json(
-        { error: 'Order or item not found' },
-        { status: 404 }
-      )
-    }
+    const { gst, total } = calculateGST(totalAmount)
+    const amountInPaise  = Math.round(total * 100)
 
-    /**
-     * Check whether ALL items are now delivered.
-     * If so, flip the order-level flag in the same document (already loaded).
-     */
-    const allDelivered = result.items.every((item) => item.delivered)
-    if (allDelivered && !result.delivered) {
-      result.delivered   = true
-      result.deliveredAt = new Date()
-      await result.save()
-    }
+    const razorpay      = getRazorpay()
+    const razorpayOrder = await razorpay.orders.create({
+      amount:   amountInPaise,
+      currency: 'INR',
+      receipt:  `order_${Date.now()}`,
+      notes:    { userId: user.userId, username: user.username },
+    })
+
+    const order = await Order.create({
+      userId:            user.userId,
+      username:          user.username,
+      minecraftUsername: minecraftUsername.trim(),
+      items: items.map((item) => ({
+        productId:   item.productId,
+        name:        item.name,
+        price:       item.price,
+        quantity:    item.quantity,    // ← stored as-is from product catalogue
+        category:    item.category ?? 'RANKS',
+        commands:    item.commands ?? [],
+        delivered:   false,           // per-item flag starts false
+        deliveredAt: undefined,
+      })),
+      totalAmount,
+      gstAmount:       gst,
+      finalAmount:     total,
+      razorpayOrderId: razorpayOrder.id,
+      status:          'PENDING',
+      delivered:       false,
+    })
 
     return NextResponse.json({
-      success:      true,
-      allDelivered,
-      remainingItems: result.items.filter((i) => !i.delivered).length,
+      orderId:   razorpayOrder.id,
+      amount:    amountInPaise,
+      currency:  'INR',
+      dbOrderId: order._id,
+      breakdown: { subtotal: totalAmount, gst, total },
     })
-  } catch (error) {
-    console.error('[plugin/deliver] mark error:', error)
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 })
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    console.error('[create-order] error:', error)
+    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
   }
-}
-
-// ─── POST (preferred) ────────────────────────────────────────────────────────
-export async function POST(req: NextRequest) {
-  return markItemDelivered(req)
-}
-
-// ─── PATCH (backward-compat alias) ───────────────────────────────────────────
-export async function PATCH(req: NextRequest) {
-  return markItemDelivered(req)
 }
